@@ -14,7 +14,8 @@
     "analyze": "Analisar",
     "add_queue": "Adicionar à fila",
     "drop_here": "Soltar para analisar",
-    "auto_pasted": "URL colada da área de transferência"
+    "auto_pasted": "URL colada da área de transferência",
+    "no_streams": "Ative pelo menos vídeo ou áudio"
   },
   "analyze": {
     "loading": "Analisando…",
@@ -25,7 +26,10 @@
     "video": "Qualidade de vídeo",
     "audio": "Faixa de áudio",
     "subtitles": "Legendas",
-    "none": "Sem formatos disponíveis"
+    "none": "Sem formatos disponíveis",
+    "container": "Contêiner",
+    "video_count": "formatos",
+    "audio_count": "faixas"
   },
   "subtitles": {
     "none": "Sem legendas",
@@ -47,8 +51,19 @@
       "downloading": "Baixando",
       "completed": "Concluído",
       "error": "Erro",
-      "cancelled": "Cancelado"
-    }
+      "cancelled": "Cancelado",
+      "paused": "Pausado"
+    },
+    "open_folder": "Abrir pasta",
+    "open_file": "Abrir arquivo",
+    "pause": "Pausar",
+    "resume": "Retomar",
+    "cancel": "Cancelar",
+    "pause_all": "Pausar tudo",
+    "resume_all": "Retomar tudo",
+    "clear_completed": "Limpar concluídos",
+    "clear_all": "Esvaziar tudo",
+    "restart": "Reiniciar"
   },
   "playlist": {
     "untitled": "Playlist",
@@ -87,7 +102,8 @@
     "reset": "Redefinir",
     "saved": "Configurações salvas",
     "reset_confirm": "Redefinir todas as configurações?",
-    "reset_done": "Configurações redefinidas"
+    "reset_done": "Configurações redefinidas",
+    "reset_confirm_title": "Redefinir configurações"
   },
   "common": {
     "cancel": "Cancelar",
@@ -110,6 +126,14 @@
     "age_restricted": "Conteúdo com restrição de idade — pode ser necessário um arquivo de cookies",
     "network": "Erro de rede — verifique sua conexão",
     "not_found": "Página não encontrada — a URL pode estar incorreta ou o conteúdo foi removido",
-    "members_only": "Conteúdo exclusivo para membros — requer assinatura ou login"
+    "members_only": "Conteúdo exclusivo para membros — requer assinatura ou login",
+    "file_not_found": "Arquivo não encontrado ou caminho indisponível"
+  },
+  "dialog": {
+    "ok": "OK",
+    "cancel": "Cancelar",
+    "clear_all_title": "Esvaziar fila",
+    "clear_all_msg": "Todos os downloads serão cancelados e removidos.",
+    "clear_all_confirm": "Esvaziar tudo"
   }
 }

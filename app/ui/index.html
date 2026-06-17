@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>GRABBIT</title>
+  <link rel="icon" type="image/png" href="/static/img/icon.png">
   <link rel="stylesheet" href="/static/css/main.css">
 </head>
 <body>
@@ -12,20 +13,8 @@
   <!-- ── Header ─────────────────────────────────────────────────────────── -->
   <header class="app-header">
     <div class="logo">
-      <svg class="logo-icon" width="26" height="30" viewBox="0 0 26 30" fill="none">
-        <!-- Left ear -->
-        <rect x="3" y="0" width="8" height="16" rx="4" fill="var(--accent)"/>
-        <!-- Right ear -->
-        <rect x="15" y="0" width="8" height="16" rx="4" fill="var(--accent)"/>
-        <!-- Head -->
-        <ellipse cx="13" cy="23" rx="11" ry="7" fill="var(--accent)"/>
-        <!-- Eyes -->
-        <circle cx="9.5"  cy="22" r="1.8" fill="var(--bg)"/>
-        <circle cx="16.5" cy="22" r="1.8" fill="var(--bg)"/>
-        <!-- Nose -->
-        <path d="M11.8 25 Q13 26 14.2 25" stroke="var(--bg)" stroke-width="1.2" stroke-linecap="round" fill="none"/>
-      </svg>
-      <span class="logo-text">GRABBIT</span>
+      <img src="/static/img/icon.png" class="logo-icon" width="30" height="30" alt="GRABBIT">
+      <img src="/static/img/logo.png" class="logo-text-img" height="22" alt="GRABBIT">
     </div>
     <div class="header-right">
       <!-- WebSocket connection status dot -->
@@ -166,20 +155,49 @@
         </div>
 
         <!-- Video format selector -->
-        <div class="format-section">
-          <div class="format-section-title" data-i18n="formats.video">Video quality</div>
+        <div class="format-section" id="section-video">
+          <div class="format-section-header">
+            <span class="format-section-title" data-i18n="formats.video">Video</span>
+            <span class="format-section-meta" id="video-count"></span>
+            <label class="toggle toggle-sm">
+              <input type="checkbox" id="video-toggle" checked>
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
           <div class="format-grid" id="video-formats"></div>
+          <div class="format-size-hint" id="video-size-hint"></div>
+          <div class="format-container-row" id="container-row">
+            <span class="format-section-title" data-i18n="formats.container">Container</span>
+            <div class="format-grid">
+              <button class="format-chip selected" id="container-mp4" onclick="selectContainer('mp4')">MP4</button>
+              <button class="format-chip" id="container-mkv" onclick="selectContainer('mkv')">MKV</button>
+            </div>
+          </div>
         </div>
 
         <!-- Audio format selector -->
-        <div class="format-section">
-          <div class="format-section-title" data-i18n="formats.audio">Audio track</div>
+        <div class="format-section" id="section-audio">
+          <div class="format-section-header">
+            <span class="format-section-title" data-i18n="formats.audio">Audio</span>
+            <span class="format-section-meta" id="audio-count"></span>
+            <label class="toggle toggle-sm">
+              <input type="checkbox" id="audio-toggle" checked>
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
           <div class="format-grid" id="audio-formats"></div>
+          <div class="format-size-hint" id="audio-size-hint"></div>
         </div>
 
         <!-- Subtitle selector -->
-        <div class="format-section">
-          <div class="format-section-title" data-i18n="formats.subtitles">Subtitles</div>
+        <div class="format-section" id="section-subs">
+          <div class="format-section-header">
+            <span class="format-section-title" data-i18n="formats.subtitles">Subtitles</span>
+            <label class="toggle toggle-sm">
+              <input type="checkbox" id="subs-toggle">
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
           <div class="sub-list" id="sub-list"></div>
         </div>
 
@@ -198,6 +216,26 @@
 
     <!-- ── Queue tab ─────────────────────────────────────────────────────── -->
     <section id="tab-queue" class="tab-pane">
+
+      <!-- Global queue controls -->
+      <div class="queue-controls">
+        <button class="btn btn-ghost" id="btn-pause-all">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>
+          <span data-i18n="queue.pause_all">Pause all</span>
+        </button>
+        <button class="btn btn-ghost" id="btn-resume-all">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><polygon points="5,3 19,12 5,21"/></svg>
+          <span data-i18n="queue.resume_all">Resume all</span>
+        </button>
+        <span style="flex:1"></span>
+        <button class="btn btn-ghost" id="btn-clear-completed">
+          <span data-i18n="queue.clear_completed">Clear completed</span>
+        </button>
+        <button class="btn btn-ghost btn-ghost-danger" id="btn-clear-all">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M9 6V4h6v2"/></svg>
+          <span data-i18n="queue.clear_all">Clear all</span>
+        </button>
+      </div>
 
       <div class="queue-stats">
         <div class="stat-card">
@@ -369,13 +407,25 @@
   <!-- ── Toast container ──────────────────────────────────────────────────── -->
   <div id="toast-container"></div>
 
-  <!-- ── Drag & drop overlay — shown when user drags a URL onto the window ── -->
+  <!-- ── Drag & drop overlay ──────────────────────────────────────────────── -->
   <div class="drag-overlay" id="drag-overlay">
     <div class="drag-overlay-inner">
       <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
         <path d="M12 3v12m0 0l-4-4m4 4l4-4M3 17v2a2 2 0 002 2h14a2 2 0 002-2v-2"/>
       </svg>
       <p data-i18n="download.drop_here">Drop to analyze</p>
+    </div>
+  </div>
+
+  <!-- ── Custom dialog — replaces all browser confirm/alert calls ──────────── -->
+  <div class="dialog-overlay hidden" id="dialog-overlay" role="dialog" aria-modal="true">
+    <div class="dialog-box" id="dialog-box">
+      <h3 class="dialog-title" id="dialog-title"></h3>
+      <p class="dialog-message" id="dialog-message"></p>
+      <div class="dialog-actions">
+        <button class="btn btn-secondary" id="dialog-cancel-btn"></button>
+        <button class="btn btn-primary" id="dialog-ok-btn"></button>
+      </div>
     </div>
   </div>
 

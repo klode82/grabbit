@@ -125,13 +125,73 @@ async def get_queue() -> Any:
 
 @router.post("/queue/add")
 async def add_to_queue(req: QueueAddRequest) -> Any:
-    # Inject download path from settings if not provided
+    # Inject download path and title from request if not already in options.
     opts = dict(req.options)
     if "output_dir" not in opts:
         opts["output_dir"] = settings.get("output_dir", ".")
+    if "title" not in opts:
+        opts["title"] = req.title
 
     item = queue.add(req.url, req.title, opts)
     return item.to_dict()
+
+
+# ── Global queue actions (must be defined BEFORE /{item_id} routes) ──────────
+
+@router.post("/queue/pause-all")
+async def pause_all() -> Any:
+    queue.pause_all()
+    return {"ok": True, "stats": queue.stats}
+
+
+@router.post("/queue/resume-all")
+async def resume_all() -> Any:
+    queue.resume_all()
+    return {"ok": True, "stats": queue.stats}
+
+
+@router.delete("/queue/completed")
+async def clear_completed() -> Any:
+    n = queue.clear_completed()
+    return {"ok": True, "removed": n, "stats": queue.stats}
+
+
+@router.delete("/queue/all")
+async def clear_all() -> Any:
+    queue.clear_all()
+    return {"ok": True, "stats": queue.stats}
+
+
+# ── Per-item actions ──────────────────────────────────────────────────────────
+
+@router.post("/queue/{item_id}/pause")
+async def pause_item(item_id: str) -> Any:
+    ok = queue.pause(item_id)
+    if not ok:
+        raise HTTPException(status_code=400, detail="Item cannot be paused")
+    return {"ok": True, "stats": queue.stats}
+
+
+@router.post("/queue/{item_id}/resume")
+async def resume_item(item_id: str) -> Any:
+    queue.resume(item_id)
+    return {"ok": True, "stats": queue.stats}
+
+
+@router.post("/queue/{item_id}/restart")
+async def restart_item(item_id: str) -> Any:
+    ok = queue.restart(item_id)
+    if not ok:
+        raise HTTPException(status_code=400, detail="Item cannot be restarted")
+    return {"ok": True, "stats": queue.stats}
+
+
+@router.post("/queue/{item_id}/cancel")
+async def cancel_item(item_id: str) -> Any:
+    ok = queue.cancel(item_id)
+    if not ok:
+        raise HTTPException(status_code=400, detail="Item cannot be cancelled")
+    return {"ok": True}
 
 
 @router.delete("/queue/{item_id}")
@@ -140,14 +200,6 @@ async def remove_from_queue(item_id: str) -> Any:
     if not removed:
         raise HTTPException(status_code=404, detail="Item not found")
     return {"ok": True, "stats": queue.stats}
-
-
-@router.post("/queue/{item_id}/cancel")
-async def cancel_item(item_id: str) -> Any:
-    ok = queue.cancel(item_id)
-    if not ok:
-        raise HTTPException(status_code=400, detail="Cannot cancel item in current state")
-    return {"ok": True}
 
 
 @router.get("/queue/stats")

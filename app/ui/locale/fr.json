@@ -14,7 +14,8 @@
     "analyze": "Analyser",
     "add_queue": "Ajouter à la file",
     "drop_here": "Déposer pour analyser",
-    "auto_pasted": "URL collée depuis le presse-papiers"
+    "auto_pasted": "URL collée depuis le presse-papiers",
+    "no_streams": "Activez au moins la vidéo ou l'audio"
   },
   "analyze": {
     "loading": "Analyse en cours…",
@@ -25,7 +26,10 @@
     "video": "Qualité vidéo",
     "audio": "Piste audio",
     "subtitles": "Sous-titres",
-    "none": "Aucun format disponible"
+    "none": "Aucun format disponible",
+    "container": "Conteneur",
+    "video_count": "formats",
+    "audio_count": "pistes"
   },
   "subtitles": {
     "none": "Aucun sous-titre",
@@ -47,8 +51,19 @@
       "downloading": "Téléchargement",
       "completed": "Terminé",
       "error": "Erreur",
-      "cancelled": "Annulé"
-    }
+      "cancelled": "Annulé",
+      "paused": "En pause"
+    },
+    "open_folder": "Ouvrir le dossier",
+    "open_file": "Ouvrir le fichier",
+    "pause": "Pause",
+    "resume": "Reprendre",
+    "cancel": "Annuler",
+    "pause_all": "Tout mettre en pause",
+    "resume_all": "Tout reprendre",
+    "clear_completed": "Supprimer terminés",
+    "clear_all": "Vider tout",
+    "restart": "Redémarrer"
   },
   "playlist": {
     "untitled": "Playlist",
@@ -87,7 +102,8 @@
     "reset": "Réinitialiser",
     "saved": "Paramètres enregistrés",
     "reset_confirm": "Réinitialiser tous les paramètres ?",
-    "reset_done": "Paramètres réinitialisés"
+    "reset_done": "Paramètres réinitialisés",
+    "reset_confirm_title": "Réinitialiser"
   },
   "common": {
     "cancel": "Annuler",
@@ -110,6 +126,14 @@
     "age_restricted": "Contenu pour adultes — un fichier cookie peut être requis",
     "network": "Erreur réseau — vérifiez votre connexion",
     "not_found": "Page introuvable — l'URL est peut-être incorrecte ou le contenu supprimé",
-    "members_only": "Contenu réservé aux membres — abonnement ou connexion requis"
+    "members_only": "Contenu réservé aux membres — abonnement ou connexion requis",
+    "file_not_found": "Fichier introuvable ou chemin indisponible"
+  },
+  "dialog": {
+    "ok": "OK",
+    "cancel": "Annuler",
+    "clear_all_title": "Vider la file",
+    "clear_all_msg": "Tous les téléchargements seront annulés et supprimés.",
+    "clear_all_confirm": "Vider tout"
   }
 }

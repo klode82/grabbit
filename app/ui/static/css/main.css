@@ -125,6 +125,14 @@ a:hover { text-decoration: underline; }
   letter-spacing: 0.08em;
   color: var(--text);
 }
+/* Logo image replaces the text span — sized to match header height */
+.logo-text-img {
+  height: 20px;
+  width: auto;
+  display: block;
+  /* On light theme the teal letters need a touch more contrast */
+  opacity: 0.92;
+}
 
 .header-right {
   display: flex;
@@ -159,8 +167,11 @@ a:hover { text-decoration: underline; }
 }
 .nav-tab:hover { background: var(--surface-hov); color: var(--text); }
 .nav-tab.active {
-  background: var(--accent-dim);
+  background: var(--surface-el);
   color: var(--accent);
+  font-weight: 600;
+  /* Accent underline gives clear "selected" signal without being garish */
+  box-shadow: inset 0 -2px 0 var(--accent);
 }
 
 /* ── Main content area ───────────────────────────────────────────────────── */
@@ -603,6 +614,23 @@ a:hover { text-decoration: underline; }
 
 .dl-actions { display: flex; gap: 4px; align-items: center; flex-direction: column; }
 
+/* Three-icon row shown when a download is completed */
+.dl-actions-complete {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  flex-shrink: 0;
+}
+.dl-actions-complete .btn-icon {
+  color: var(--text-2);
+  border: 1px solid var(--border);
+}
+.dl-actions-complete .btn-icon:hover {
+  background: var(--surface-hov);
+  color: var(--text);
+  border-color: var(--border-md);
+}
+
 /* ── Settings panel ──────────────────────────────────────────────────────── */
 .settings-grid {
   display: grid;
@@ -868,7 +896,90 @@ a:hover { text-decoration: underline; }
   50%       { opacity: 0.3; }
 }
 
-/* ── Reduced motion — respect system accessibility preference ────────────── */
+/* ── Format section header with toggle ───────────────────────────────────── */
+.format-section-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.format-section-meta {
+  font-size: 11px;
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Section disabled state (toggle OFF) */
+.format-section.disabled .format-grid,
+.format-section.disabled .sub-list {
+  opacity: 0.35;
+  pointer-events: none;
+}
+.format-section.disabled .format-size-hint,
+.format-section.disabled .format-container-row { display: none; }
+
+/* Size hint below chips */
+.format-size-hint {
+  font-size: 11px;
+  color: var(--text-2);
+  margin-top: 6px;
+  min-height: 15px;
+}
+
+/* Quality group labels inside format-grid */
+.format-group-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-3);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  align-self: center;
+  padding: 0 2px;
+  white-space: nowrap;
+}
+
+/* Container row */
+.format-container-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+.format-container-row .format-section-title { flex-shrink: 0; }
+
+/* ── Toggle switch ───────────────────────────────────────────────────────── */
+.toggle { position: relative; display: inline-flex; align-items: center; cursor: pointer; }
+.toggle input { opacity: 0; width: 0; height: 0; position: absolute; }
+.toggle-slider {
+  width: 32px;
+  height: 18px;
+  background: var(--surface-hov);
+  border-radius: 9px;
+  transition: background 0.2s;
+  flex-shrink: 0;
+  position: relative;
+}
+.toggle-slider::before {
+  content: '';
+  position: absolute;
+  left: 2px;
+  top: 2px;
+  width: 14px;
+  height: 14px;
+  background: var(--text-3);
+  border-radius: 50%;
+  transition: transform 0.2s, background 0.2s;
+}
+.toggle input:checked + .toggle-slider { background: var(--accent-dim); }
+.toggle input:checked + .toggle-slider::before {
+  transform: translateX(14px);
+  background: var(--accent);
+}
+.toggle-sm .toggle-slider { width: 26px; height: 15px; border-radius: 8px; }
+.toggle-sm .toggle-slider::before { width: 11px; height: 11px; }
+.toggle-sm input:checked + .toggle-slider::before { transform: translateX(11px); }
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -878,3 +989,102 @@ a:hover { text-decoration: underline; }
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ── Queue controls bar ──────────────────────────────────────────────────── */
+.queue-controls {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+
+/* Global queue buttons get the same look as the per-item action buttons */
+.queue-controls .btn {
+  border: 1px solid var(--border-md);
+  background: var(--surface-el);
+  color: var(--text);
+  font-size: 12px;
+  gap: 5px;
+}
+.queue-controls .btn:hover {
+  background: var(--surface-hov);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.queue-controls .btn-ghost-danger {
+  color: var(--danger);
+  border-color: var(--border-md);
+}
+.queue-controls .btn-ghost-danger:hover {
+  background: var(--danger-dim);
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+/* ── Queue action buttons — unified style for all states ─────────────────── */
+.dl-item-actions {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+/* Every icon button in the queue gets the same look */
+.dl-item-actions .btn-icon {
+  color: var(--text);
+  border: 1px solid var(--border-md);
+  background: var(--surface-el);
+  /* Prevent layout shifts during hover transitions */
+  will-change: background, border-color;
+}
+.dl-item-actions .btn-icon:hover {
+  background: var(--surface-hov);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* Cancelled item styling */
+.dl-item.status-cancelled { border-color: var(--border); opacity: 0.6; }
+.badge-cancelled { background: var(--surface-el); color: var(--text-3); }
+.badge-paused    { background: var(--warn-dim);   color: var(--warn);   }
+
+/* ── Custom dialog ───────────────────────────────────────────────────────── */
+.dialog-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 400;
+  animation: fadeIn 0.15s ease;
+}
+.dialog-overlay.hidden { display: none; }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+.dialog-box {
+  background: var(--surface-el);
+  border: 1px solid var(--border-md);
+  border-radius: var(--r-xl);
+  padding: 24px;
+  max-width: 380px;
+  width: calc(100% - 48px);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  animation: dialogSlideUp 0.18s ease;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+}
+@keyframes dialogSlideUp {
+  from { transform: translateY(10px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+.dialog-title   { font-size: 15px; font-weight: 600; }
+.dialog-message { font-size: 13px; color: var(--text-2); line-height: 1.5; }
+.dialog-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 4px; }
+
+/* Danger variant for destructive dialogs */
+.dialog-box.danger .dialog-title { color: var(--danger); }
+#dialog-ok-btn.danger { background: var(--danger); color: #fff; }
+#dialog-ok-btn.danger:hover { background: #e05555; }

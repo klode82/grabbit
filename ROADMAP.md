@@ -235,6 +235,7 @@ grabbit/
 > Completare la pagina impostazioni.
 
 - [ ] Pulsante "Sfoglia" nativo per scegliere la cartella di download
+- [ ] **Rinomina file duplicati con counter** (`_01`, `_02` …) — usa `ydl.prepare_filename(info)` per ottenere il nome esatto che yt-dlp userebbe, evitando il problema della sanitizzazione. Attualmente: `overwrites=True` (sovrascrive).
 - [ ] Template nome file configurabile (es. `%(uploader)s - %(title)s`)
 - [ ] Sezione "Avanzate" nascosta per le opzioni yt-dlp meno comuni
 - [ ] Import/export impostazioni (file JSON)

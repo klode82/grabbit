@@ -14,7 +14,8 @@
     "analyze": "Analizar",
     "add_queue": "Añadir a la cola",
     "drop_here": "Soltar para analizar",
-    "auto_pasted": "URL pegada desde el portapapeles"
+    "auto_pasted": "URL pegada desde el portapapeles",
+    "no_streams": "Activa al menos vídeo o audio"
   },
   "analyze": {
     "loading": "Analizando…",
@@ -25,7 +26,10 @@
     "video": "Calidad de video",
     "audio": "Pista de audio",
     "subtitles": "Subtítulos",
-    "none": "Sin formatos disponibles"
+    "none": "Sin formatos disponibles",
+    "container": "Contenedor",
+    "video_count": "formatos",
+    "audio_count": "pistas"
   },
   "subtitles": {
     "none": "Sin subtítulos",
@@ -47,8 +51,19 @@
       "downloading": "Descargando",
       "completed": "Completado",
       "error": "Error",
-      "cancelled": "Cancelado"
-    }
+      "cancelled": "Cancelado",
+      "paused": "En pausa"
+    },
+    "open_folder": "Abrir carpeta",
+    "open_file": "Abrir archivo",
+    "pause": "Pausar",
+    "resume": "Reanudar",
+    "cancel": "Cancelar",
+    "pause_all": "Pausar todo",
+    "resume_all": "Reanudar todo",
+    "clear_completed": "Limpiar completados",
+    "clear_all": "Vaciar todo",
+    "restart": "Reiniciar"
   },
   "playlist": {
     "untitled": "Lista de reproducción",
@@ -87,7 +102,8 @@
     "reset": "Restablecer",
     "saved": "Ajustes guardados",
     "reset_confirm": "¿Restablecer todos los ajustes?",
-    "reset_done": "Ajustes restablecidos"
+    "reset_done": "Ajustes restablecidos",
+    "reset_confirm_title": "Restablecer ajustes"
   },
   "common": {
     "cancel": "Cancelar",
@@ -110,6 +126,14 @@
     "age_restricted": "Contenido restringido por edad — puede ser necesario un archivo de cookies",
     "network": "Error de red — comprueba tu conexión",
     "not_found": "Página no encontrada — la URL puede ser incorrecta o el contenido ha sido eliminado",
-    "members_only": "Contenido solo para miembros — requiere suscripción o inicio de sesión"
+    "members_only": "Contenido solo para miembros — requiere suscripción o inicio de sesión",
+    "file_not_found": "Archivo no encontrado o ruta no disponible"
+  },
+  "dialog": {
+    "ok": "OK",
+    "cancel": "Cancelar",
+    "clear_all_title": "Vaciar cola",
+    "clear_all_msg": "Todas las descargas serán canceladas y eliminadas.",
+    "clear_all_confirm": "Vaciar todo"
   }
 }

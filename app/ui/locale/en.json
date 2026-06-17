@@ -14,7 +14,8 @@
     "analyze": "Analyze",
     "add_queue": "Add to queue",
     "drop_here": "Drop to analyze",
-    "auto_pasted": "URL pasted from clipboard"
+    "auto_pasted": "URL pasted from clipboard",
+    "no_streams": "Enable at least video or audio"
   },
   "analyze": {
     "loading": "Analyzing URL…",
@@ -25,7 +26,10 @@
     "video": "Video quality",
     "audio": "Audio track",
     "subtitles": "Subtitles",
-    "none": "No formats available"
+    "none": "No formats available",
+    "container": "Container",
+    "video_count": "formats",
+    "audio_count": "tracks"
   },
   "subtitles": {
     "none": "No subtitles available",
@@ -47,8 +51,19 @@
       "downloading": "Downloading",
       "completed": "Completed",
       "error": "Error",
-      "cancelled": "Cancelled"
-    }
+      "cancelled": "Cancelled",
+      "paused": "Paused"
+    },
+    "open_folder": "Open folder",
+    "open_file": "Open file",
+    "pause": "Pause",
+    "resume": "Resume",
+    "cancel": "Cancel",
+    "pause_all": "Pause all",
+    "resume_all": "Resume all",
+    "clear_completed": "Clear completed",
+    "clear_all": "Clear all",
+    "restart": "Restart"
   },
   "playlist": {
     "untitled": "Playlist",
@@ -87,7 +102,8 @@
     "reset": "Reset defaults",
     "saved": "Settings saved",
     "reset_confirm": "Reset all settings to defaults?",
-    "reset_done": "Settings reset to defaults"
+    "reset_done": "Settings reset to defaults",
+    "reset_confirm_title": "Reset settings"
   },
   "common": {
     "cancel": "Cancel",
@@ -110,6 +126,14 @@
     "age_restricted": "Age-restricted content — a cookie file may be required",
     "network": "Network error — check your connection and try again",
     "not_found": "Page not found — the URL may be incorrect or the content has been removed",
-    "members_only": "Members-only content — requires a subscription or login"
+    "members_only": "Members-only content — requires a subscription or login",
+    "file_not_found": "File not found or path unavailable"
+  },
+  "dialog": {
+    "ok": "OK",
+    "cancel": "Cancel",
+    "clear_all_title": "Clear entire queue",
+    "clear_all_msg": "All downloads will be cancelled and removed. This cannot be undone.",
+    "clear_all_confirm": "Clear all"
   }
 }

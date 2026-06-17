@@ -3,6 +3,7 @@ import time
 import socket
 import sys
 import os
+from pathlib import Path
 
 # Qt WebEngine reads QTWEBENGINE_CHROMIUM_FLAGS at initialisation time,
 # which happens during 'import webview' below — not inside main().
@@ -108,6 +109,61 @@ class GrabbitAPI:
         from app.core.logger import get_log_path
         return get_log_path()
 
+    def open_file(self, path: str) -> None:
+        """Open a file with the system's default application."""
+        if not path or not path.strip():
+            from app.core.logger import log
+            log.warning("open_file called with empty path — ignoring")
+            return
+        import subprocess
+        try:
+            if sys.platform == "darwin":
+                subprocess.Popen(["open", path])
+            elif sys.platform == "win32":
+                os.startfile(path)  # type: ignore[attr-defined]
+            else:
+                subprocess.Popen(["xdg-open", path])
+        except Exception as exc:
+            from app.core.logger import log
+            log.error("open_file failed for '%s': %s", path, exc)
+
+    def open_folder(self, path: str) -> None:
+        """Open the folder containing *path* in the system file manager."""
+        if not path or not path.strip():
+            from app.core.logger import log
+            log.warning("open_folder called with empty path — ignoring")
+            return
+        import subprocess
+        from pathlib import Path as _Path
+        folder = str(_Path(path).parent)
+        try:
+            if sys.platform == "darwin":
+                # -R selects the file inside Finder
+                subprocess.Popen(["open", "-R", path])
+            elif sys.platform == "win32":
+                subprocess.Popen(["explorer", f"/select,{path}"])
+            else:
+                subprocess.Popen(["xdg-open", folder])
+        except Exception as exc:
+            from app.core.logger import log
+            log.error("open_folder failed for '%s': %s", folder, exc)
+
+    def open_url(self, url: str) -> None:
+        """Open *url* in the system's default browser."""
+        if not url or not url.strip():
+            return
+        import subprocess
+        try:
+            if sys.platform == "darwin":
+                subprocess.Popen(["open", url])
+            elif sys.platform == "win32":
+                subprocess.Popen(["start", url], shell=True)
+            else:
+                subprocess.Popen(["xdg-open", url])
+        except Exception as exc:
+            from app.core.logger import log
+            log.error("open_url failed for '%s': %s", url, exc)
+
 
 def main() -> None:
     # Detect GUI backend before doing anything else so we can apply
@@ -131,6 +187,9 @@ def main() -> None:
 
     print(f"[GRABBIT] Server running at http://127.0.0.1:{port}")
 
+    # Resolve icon path — assets/ lives next to main.py
+    _icon_png = Path(__file__).parent / "assets" / "icon.png"
+
     window = webview.create_window(
         title="GRABBIT",
         url=f"http://127.0.0.1:{port}",
@@ -143,9 +202,39 @@ def main() -> None:
         js_api=GrabbitAPI(),
     )
 
+    def _set_app_icon() -> None:
+        """Set the window and taskbar icon after the GUI has initialised.
+
+        Runs inside the pywebview GUI thread via webview.start(func=...).
+        Uses QTimer.singleShot(0) to schedule the icon update on the Qt
+        main loop so it's safe to call from the webview worker thread.
+        """
+        if not _icon_png.exists():
+            return
+        if gui_backend == "qt":
+            try:
+                from PySide6.QtWidgets import QApplication
+                from PySide6.QtCore import QTimer
+                from PySide6.QtGui import QIcon
+
+                def _apply() -> None:
+                    app = QApplication.instance()
+                    if app:
+                        icon = QIcon(str(_icon_png))
+                        app.setWindowIcon(icon)
+                        # Also set on all existing top-level windows
+                        for w in app.topLevelWidgets():
+                            w.setWindowIcon(icon)
+
+                QTimer.singleShot(0, _apply)
+            except Exception as exc:
+                print(f"[GRABBIT] Could not set icon (Qt): {exc}", file=sys.stderr)
+        # macOS: icon is embedded in the .app bundle at packaging time (Phase 9)
+        # Windows: icon is embedded in the .exe by PyInstaller (Phase 9)
+
     # Pass the detected backend explicitly so pywebview skips failed attempts.
     # gui=None on macOS/Windows means "use the platform default".
-    webview.start(gui=gui_backend, debug="--debug" in sys.argv)
+    webview.start(gui=gui_backend, debug="--debug" in sys.argv, func=_set_app_icon)
 
 
 if __name__ == "__main__":

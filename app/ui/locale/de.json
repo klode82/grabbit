@@ -14,7 +14,8 @@
     "analyze": "Analysieren",
     "add_queue": "Zur Warteschlange",
     "drop_here": "Zum Analysieren ablegen",
-    "auto_pasted": "URL aus der Zwischenablage eingefügt"
+    "auto_pasted": "URL aus der Zwischenablage eingefügt",
+    "no_streams": "Mindestens Video oder Audio aktivieren"
   },
   "analyze": {
     "loading": "Analyse läuft…",
@@ -25,7 +26,10 @@
     "video": "Videoqualität",
     "audio": "Audiospur",
     "subtitles": "Untertitel",
-    "none": "Keine Formate verfügbar"
+    "none": "Keine Formate verfügbar",
+    "container": "Container",
+    "video_count": "Formate",
+    "audio_count": "Spuren"
   },
   "subtitles": {
     "none": "Keine Untertitel",
@@ -47,8 +51,19 @@
       "downloading": "Lädt",
       "completed": "Fertig",
       "error": "Fehler",
-      "cancelled": "Abgebrochen"
-    }
+      "cancelled": "Abgebrochen",
+      "paused": "Pausiert"
+    },
+    "open_folder": "Ordner öffnen",
+    "open_file": "Datei öffnen",
+    "pause": "Pause",
+    "resume": "Fortsetzen",
+    "cancel": "Abbrechen",
+    "pause_all": "Alle pausieren",
+    "resume_all": "Alle fortsetzen",
+    "clear_completed": "Fertige entfernen",
+    "clear_all": "Alles leeren",
+    "restart": "Neu starten"
   },
   "playlist": {
     "untitled": "Playlist",
@@ -87,7 +102,8 @@
     "reset": "Zurücksetzen",
     "saved": "Einstellungen gespeichert",
     "reset_confirm": "Alle Einstellungen zurücksetzen?",
-    "reset_done": "Einstellungen zurückgesetzt"
+    "reset_done": "Einstellungen zurückgesetzt",
+    "reset_confirm_title": "Einstellungen zurücksetzen"
   },
   "common": {
     "cancel": "Abbrechen",
@@ -110,6 +126,14 @@
     "age_restricted": "Altersbeschränkter Inhalt — eine Cookie-Datei kann erforderlich sein",
     "network": "Netzwerkfehler — Verbindung prüfen",
     "not_found": "Seite nicht gefunden — die URL ist möglicherweise falsch oder der Inhalt wurde entfernt",
-    "members_only": "Nur für Mitglieder — Abonnement oder Anmeldung erforderlich"
+    "members_only": "Nur für Mitglieder — Abonnement oder Anmeldung erforderlich",
+    "file_not_found": "Datei nicht gefunden oder Pfad nicht verfügbar"
+  },
+  "dialog": {
+    "ok": "OK",
+    "cancel": "Abbrechen",
+    "clear_all_title": "Warteschlange leeren",
+    "clear_all_msg": "Alle Downloads werden abgebrochen und entfernt.",
+    "clear_all_confirm": "Alles leeren"
   }
 }

@@ -14,7 +14,8 @@
     "analyze": "Analizza",
     "add_queue": "Aggiungi alla coda",
     "drop_here": "Rilascia per analizzare",
-    "auto_pasted": "URL incollato dagli appunti"
+    "auto_pasted": "URL incollato dagli appunti",
+    "no_streams": "Attiva almeno video o audio"
   },
   "analyze": {
     "loading": "Analisi in corso…",
@@ -25,7 +26,10 @@
     "video": "Qualità video",
     "audio": "Traccia audio",
     "subtitles": "Sottotitoli",
-    "none": "Nessun formato disponibile"
+    "none": "Nessun formato disponibile",
+    "container": "Contenitore",
+    "video_count": "formati",
+    "audio_count": "tracce"
   },
   "subtitles": {
     "none": "Nessun sottotitolo disponibile",
@@ -47,8 +51,19 @@
       "downloading": "Scaricamento",
       "completed": "Completato",
       "error": "Errore",
-      "cancelled": "Annullato"
-    }
+      "cancelled": "Annullato",
+      "paused": "In pausa"
+    },
+    "open_folder": "Apri cartella",
+    "open_file": "Apri file",
+    "pause": "Pausa",
+    "resume": "Riprendi",
+    "cancel": "Annulla",
+    "pause_all": "Pausa tutto",
+    "resume_all": "Riprendi tutto",
+    "clear_completed": "Rimuovi completati",
+    "clear_all": "Svuota tutto",
+    "restart": "Riavvia"
   },
   "playlist": {
     "untitled": "Playlist",
@@ -87,7 +102,8 @@
     "reset": "Ripristina predefiniti",
     "saved": "Impostazioni salvate",
     "reset_confirm": "Ripristinare tutte le impostazioni ai valori predefiniti?",
-    "reset_done": "Impostazioni ripristinate"
+    "reset_done": "Impostazioni ripristinate",
+    "reset_confirm_title": "Ripristina impostazioni"
   },
   "common": {
     "cancel": "Annulla",
@@ -110,6 +126,14 @@
     "age_restricted": "Contenuto con limiti di età — potrebbe essere necessario un file cookie",
     "network": "Errore di rete — controlla la connessione e riprova",
     "not_found": "Pagina non trovata — l'URL potrebbe essere errato o il contenuto rimosso",
-    "members_only": "Contenuto riservato ai membri — richiede un abbonamento o accesso"
+    "members_only": "Contenuto riservato ai membri — richiede un abbonamento o accesso",
+    "file_not_found": "File non trovato o percorso non disponibile"
+  },
+  "dialog": {
+    "ok": "OK",
+    "cancel": "Annulla",
+    "clear_all_title": "Svuota la coda",
+    "clear_all_msg": "Tutti i download verranno annullati e rimossi. Questa azione è irreversibile.",
+    "clear_all_confirm": "Svuota tutto"
   }
 }

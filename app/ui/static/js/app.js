@@ -5,15 +5,19 @@
 /* ── State ─────────────────────────────────────────────────────────────────── */
 const State = {
   settings: {},
-  currentResult: null,       // last analyzed video
-  selectedVideo: null,       // chosen video format_id
-  selectedAudio: null,       // chosen audio format_id
-  selectedSub: null,         // { lang, auto }
+  currentResult: null,
+  selectedVideo: null,
+  selectedAudio: null,
+  selectedSub:   null,
+  // Phase 4: section toggles and container choice
+  videoEnabled:    true,
+  audioEnabled:    true,
+  subsEnabled:     false,
+  outputContainer: 'mp4',
   queueItems: [],
   queueStats: { total: 0, pending: 0, active: 0, completed: 0, error: 0 },
-  // Playlist
   playlistInfo: null,
-  playlistEntries: [],       // fully analyzed entries
+  playlistEntries:  [],
   playlistSelected: new Set(),
 };
 
@@ -30,7 +34,71 @@ function fmtDuration(secs) {
   return `${m}:${String(s).padStart(2,'0')}`;
 }
 
-/* ── Toast ─────────────────────────────────────────────────────────────────── */
+/* ── Format section toggle ─────────────────────────────────────────────────── */
+function toggleSection(type, enabled) {
+  if (type === 'video') {
+    State.videoEnabled = enabled;
+    qs('#section-video')?.classList.toggle('disabled', !enabled);
+    const cr = qs('#container-row');
+    if (cr) cr.style.display = enabled ? '' : 'none';
+    if (!enabled) { const h = qs('#video-size-hint'); if (h) h.textContent = ''; }
+  } else if (type === 'audio') {
+    State.audioEnabled = enabled;
+    qs('#section-audio')?.classList.toggle('disabled', !enabled);
+    if (!enabled) { const h = qs('#audio-size-hint'); if (h) h.textContent = ''; }
+  } else if (type === 'subs') {
+    State.subsEnabled = enabled;
+    qs('#section-subs')?.classList.toggle('disabled', !enabled);
+  }
+}
+
+function selectContainer(ext) {
+  State.outputContainer = ext;
+  ['mp4', 'mkv'].forEach(e => {
+    qs(`#container-${e}`)?.classList.toggle('selected', e === ext);
+  });
+}
+
+async function openSourceUrl() {
+  const url = State.currentResult?.webpage_url;
+  if (!url) return;
+  try { if (window.pywebview?.api?.open_url) await window.pywebview.api.open_url(url); } catch {}
+}
+
+/* ── Custom dialog (replaces browser confirm/alert) ────────────────────────── */
+function showDialog({ title, message, confirmText, cancelText = null, danger = false }) {
+  return new Promise(resolve => {
+    qs('#dialog-title').textContent   = title;
+    qs('#dialog-message').textContent = message;
+
+    const okBtn = qs('#dialog-ok-btn');
+    okBtn.textContent = confirmText || I18N.t('dialog.ok');
+    okBtn.className   = `btn ${danger ? 'btn-primary danger' : 'btn-primary'}`;
+
+    const cancelBtn = qs('#dialog-cancel-btn');
+    if (cancelText !== null) {
+      cancelBtn.textContent  = cancelText || I18N.t('dialog.cancel');
+      cancelBtn.style.display = '';
+    } else {
+      cancelBtn.style.display = 'none';
+    }
+
+    qs('#dialog-box').classList.toggle('danger', danger);
+    qs('#dialog-overlay').classList.remove('hidden');
+
+    const close = (result) => {
+      qs('#dialog-overlay').classList.add('hidden');
+      resolve(result);
+    };
+
+    okBtn.onclick     = () => close(true);
+    cancelBtn.onclick = () => close(false);
+    // Click outside the box to dismiss
+    qs('#dialog-overlay').onclick = (e) => {
+      if (e.target === qs('#dialog-overlay')) close(false);
+    };
+  });
+}
 function toast(msg, type = 'info', duration = 3500) {
   const c = qs('#toast-container');
   const el = document.createElement('div');
@@ -59,6 +127,28 @@ function switchTab(id) {
   // CSS handles the fade transition via opacity — just toggle the active class.
   qsa('.nav-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === id));
   qsa('.tab-pane').forEach(p => p.classList.toggle('active', p.id === `tab-${id}`));
+
+  // Auto-paste: whenever the user lands on the Download tab with an empty field
+  if (id === 'download') checkAndAutoPaste();
+}
+
+/* ── Clipboard auto-paste helper ───────────────────────────────────────────── */
+async function checkAndAutoPaste() {
+  if (qs('#url-input').value.trim()) return;
+
+  // Use the pywebview Python bridge only.
+  // navigator.clipboard.readText() is intentionally NOT used: it triggers a
+  // Qt WebEngine permission request that hits a bug in pywebview's PySide6
+  // integration (setFeaturePermission called with wrong argument types).
+  try {
+    if (window.pywebview?.api?.get_clipboard) {
+      const text = await window.pywebview.api.get_clipboard();
+      if (text && /^https?:\/\//i.test(text.trim())) {
+        qs('#url-input').value = text.trim();
+        toast(I18N.t('download.auto_pasted'), 'info', 2500);
+      }
+    }
+  } catch {}
 }
 
 /* ── Error parser — maps raw yt-dlp messages to user-friendly strings ──────── */
@@ -110,17 +200,22 @@ async function handleAnalyze() {
 }
 
 function resetResult() {
-  State.currentResult = null;
-  State.selectedVideo = null;
-  State.selectedAudio = null;
-  State.selectedSub = null;
-  State.playlistInfo = null;
+  State.currentResult  = null;
+  State.selectedVideo  = null;
+  State.selectedAudio  = null;
+  State.selectedSub    = null;
+  State.videoEnabled   = true;
+  State.audioEnabled   = true;
+  State.subsEnabled    = false;
+  State.playlistInfo   = null;
   State.playlistEntries = [];
   qs('#result-card').classList.remove('visible');
   qs('#playlist-analysis').classList.remove('visible');
+  const vh = qs('#video-size-hint'); if (vh) vh.textContent = '';
+  const ah = qs('#audio-size-hint'); if (ah) ah.textContent = '';
 }
 
-/* ── Skeleton loader — replaces the old progress bar during analysis ───────── */
+/* ── Skeleton loader ────────────────────────────────────────────────────────── */
 function showSkeleton(visible) {
   qs('#skeleton-card').classList.toggle('visible', visible);
   qs('#analyze-btn').disabled = visible;
@@ -130,7 +225,6 @@ function showSkeleton(visible) {
 function handleVideoResult(result) {
   State.currentResult = result;
 
-  // thumbnail
   const thumb = qs('#result-thumb');
   if (result.thumbnail) {
     thumb.src = result.thumbnail;
@@ -141,24 +235,38 @@ function handleVideoResult(result) {
     qs('#result-thumb-ph').style.display = 'flex';
   }
 
-  qs('#result-title').textContent = result.title || '—';
-  qs('#result-duration').textContent = fmtDuration(result.duration);
-  qs('#result-extractor').textContent = result.extractor || '';
-  qs('#result-uploader').textContent = result.uploader || '';
+  qs('#result-title').textContent     = result.title || '—';
+  qs('#result-duration').textContent  = fmtDuration(result.duration);
+  qs('#result-uploader').textContent  = result.uploader || '';
 
-  // summary badges
+  // Extractor — clickable link to source
+  const extEl = qs('#result-extractor');
+  extEl.textContent = result.extractor || '';
+  if (result.webpage_url) {
+    extEl.style.cssText = 'color:var(--accent);cursor:pointer;text-decoration:underline';
+    extEl.title = result.webpage_url;
+    extEl.onclick = openSourceUrl;
+  } else {
+    extEl.style.cssText = '';
+    extEl.onclick = null;
+  }
+
   const bestV = result.best_video;
   const bestA = result.best_audio;
   qs('#result-best-video').textContent = bestV ? bestV.quality_label : '—';
-  qs('#result-best-audio').textContent = bestA ? `${bestA.quality_label}` : '—';
+  qs('#result-best-audio').textContent = bestA ? bestA.quality_label : '—';
   qs('#result-has-subs').textContent = result.has_subtitles
-    ? I18N.t('analyze.subs_yes')
-    : I18N.t('analyze.subs_no');
+    ? I18N.t('analyze.subs_yes') : I18N.t('analyze.subs_no');
 
-  renderVideoFormats(result.video_formats);
-  renderAudioFormats(result.audio_formats);
-  renderSubtitles(result.subtitles);
+  renderVideoFormats(result.video_formats || []);
+  renderAudioFormats(result.audio_formats || []);
+  renderSubtitles(result.subtitles || {});
   applyDefaults(result);
+
+  // Bind toggle events
+  qs('#video-toggle').onchange = e => toggleSection('video', e.target.checked);
+  qs('#audio-toggle').onchange = e => toggleSection('audio', e.target.checked);
+  qs('#subs-toggle').onchange  = e => toggleSection('subs',  e.target.checked);
 
   qs('#result-card').classList.add('visible');
 }
@@ -166,17 +274,45 @@ function handleVideoResult(result) {
 function applyDefaults(result) {
   const s = State.settings;
 
-  // Pre-select video
-  if (s.default_video_quality === 'best' && result.video_formats.length) {
-    selectVideoFormat(result.video_formats[0].format_id);
-  } else if (s.default_video_quality) {
-    const target = parseInt(s.default_video_quality);
-    const match = result.video_formats.find(f => (f.height || 0) <= target) || result.video_formats[0];
-    if (match) selectVideoFormat(match.format_id);
+  // Video toggle: ON only if there are video formats
+  const hasVideo = (result.video_formats || []).length > 0;
+  State.videoEnabled = hasVideo;
+  qs('#video-toggle').checked = hasVideo;
+  qs('#section-video').classList.toggle('disabled', !hasVideo);
+  const cr = qs('#container-row');
+  if (cr) cr.style.display = hasVideo ? '' : 'none';
+
+  // Audio toggle: ON only if there are audio formats
+  const hasAudio = (result.audio_formats || []).length > 0;
+  State.audioEnabled = hasAudio;
+  qs('#audio-toggle').checked = hasAudio;
+  qs('#section-audio').classList.toggle('disabled', !hasAudio);
+
+  // Subtitles toggle: default OFF unless settings has a sub lang AND subs exist
+  const hasSubs = result.has_subtitles;
+  const wantSubs = !!(s.default_sub_lang && hasSubs);
+  State.subsEnabled = wantSubs;
+  qs('#subs-toggle').checked = wantSubs;
+  qs('#section-subs').classList.toggle('disabled', !wantSubs);
+
+  // Container
+  State.outputContainer = s.default_video_ext === 'mkv' ? 'mkv' : 'mp4';
+  selectContainer(State.outputContainer);
+
+  // Pre-select video format
+  if (hasVideo) {
+    if (s.default_video_quality === 'best') {
+      selectVideoFormat(result.video_formats[0].format_id);
+    } else {
+      const target = parseInt(s.default_video_quality) || 9999;
+      const match  = result.video_formats.find(f => (f.height || 0) <= target)
+                     || result.video_formats[0];
+      if (match) selectVideoFormat(match.format_id);
+    }
   }
 
-  // Pre-select audio
-  if (result.audio_formats.length) {
+  // Pre-select audio format
+  if (hasAudio) {
     const langMatch = s.default_audio_lang
       ? result.audio_formats.find(f => f.language === s.default_audio_lang)
       : null;
@@ -194,23 +330,55 @@ function applyDefaults(result) {
 
 /* ── Format chips ──────────────────────────────────────────────────────────── */
 function renderVideoFormats(formats) {
-  const wrap = qs('#video-formats');
+  const wrap   = qs('#video-formats');
+  const countEl = qs('#video-count');
   wrap.innerHTML = '';
+
   if (!formats.length) {
     wrap.innerHTML = `<span class="muted small">${I18N.t('formats.none')}</span>`;
+    if (countEl) countEl.textContent = '';
     return;
   }
+  if (countEl) countEl.textContent = `${formats.length} ${I18N.t('formats.video_count')}`;
+
+  // Group by resolution family
+  const groups = [
+    { label: '4K',  test: h => h >= 2160 },
+    { label: 'FHD', test: h => h >= 1080 && h < 2160 },
+    { label: 'HD',  test: h => h >= 720  && h < 1080 },
+    { label: 'SD',  test: h => h > 0     && h < 720  },
+    { label: '?',   test: () => true },   // catch-all
+  ];
+
+  let lastGroup = null;
   formats.forEach(f => {
+    const h     = f.height || 0;
+    const group = groups.find(g => g.test(h));
+    if (group !== lastGroup && group.label !== '?') {
+      const lbl = document.createElement('span');
+      lbl.className = 'format-group-label';
+      lbl.textContent = group.label;
+      wrap.appendChild(lbl);
+      lastGroup = group;
+    }
+
     const chip = document.createElement('button');
     chip.className = 'format-chip';
     chip.dataset.formatId = f.format_id;
-    chip.textContent = f.combined
-      ? `${f.quality_label} (${f.ext})`
-      : `${f.quality_label}${f.fps ? ` ${f.fps}fps` : ''} · ${f.ext}`;
-    chip.title = [
-      f.vcodec,
-      f.filesize_human ? `~${f.filesize_human}` : '',
-    ].filter(Boolean).join(' · ');
+
+    // Label: quality · codec · ext
+    const parts = [f.quality_label];
+    if (f.codec) parts.push(f.codec);
+    if (f.ext)   parts.push(f.ext);
+    chip.textContent = parts.join(' · ');
+
+    // Tooltip: fps, size
+    const tips = [];
+    if (f.fps)            tips.push(`${f.fps}fps`);
+    if (f.filesize_human) tips.push(`~${f.filesize_human}`);
+    if (f.combined)       tips.push('video+audio');
+    chip.title = tips.join(' · ');
+
     chip.onclick = () => selectVideoFormat(f.format_id);
     wrap.appendChild(chip);
   });
@@ -218,25 +386,40 @@ function renderVideoFormats(formats) {
 
 function selectVideoFormat(id) {
   State.selectedVideo = id;
-  qsa('.format-chip', qs('#video-formats')).forEach(c => {
-    c.classList.toggle('selected', c.dataset.formatId === id);
-  });
+  qsa('.format-chip', qs('#video-formats')).forEach(c =>
+    c.classList.toggle('selected', c.dataset.formatId === id)
+  );
+  // Show estimated file size
+  const fmt  = State.currentResult?.video_formats?.find(f => f.format_id === id);
+  const hint = qs('#video-size-hint');
+  if (hint) hint.textContent = fmt?.filesize_human ? `~${fmt.filesize_human}` : '';
 }
 
 function renderAudioFormats(formats) {
-  const wrap = qs('#audio-formats');
+  const wrap    = qs('#audio-formats');
+  const countEl = qs('#audio-count');
   wrap.innerHTML = '';
+
   if (!formats.length) {
     wrap.innerHTML = `<span class="muted small">${I18N.t('formats.none')}</span>`;
+    if (countEl) countEl.textContent = '';
     return;
   }
+  if (countEl) countEl.textContent = `${formats.length} ${I18N.t('formats.audio_count')}`;
+
   formats.forEach(f => {
     const chip = document.createElement('button');
     chip.className = 'format-chip';
     chip.dataset.formatId = f.format_id;
-    const lang = f.language ? ` [${f.language}]` : '';
-    chip.textContent = `${f.quality_label}${lang} · ${f.ext}`;
-    chip.title = f.filesize_human ? `~${f.filesize_human}` : '';
+
+    // Label: bitrate · codec · lang
+    const parts = [f.quality_label];
+    if (f.codec)    parts.push(f.codec);
+    if (f.ext)      parts.push(f.ext);
+    if (f.language) parts.push(`[${f.language}]`);
+    chip.textContent = parts.join(' · ');
+
+    if (f.filesize_human) chip.title = `~${f.filesize_human}`;
     chip.onclick = () => selectAudioFormat(f.format_id);
     wrap.appendChild(chip);
   });
@@ -244,9 +427,12 @@ function renderAudioFormats(formats) {
 
 function selectAudioFormat(id) {
   State.selectedAudio = id;
-  qsa('.format-chip', qs('#audio-formats')).forEach(c => {
-    c.classList.toggle('selected', c.dataset.formatId === id);
-  });
+  qsa('.format-chip', qs('#audio-formats')).forEach(c =>
+    c.classList.toggle('selected', c.dataset.formatId === id)
+  );
+  const fmt  = State.currentResult?.audio_formats?.find(f => f.format_id === id);
+  const hint = qs('#audio-size-hint');
+  if (hint) hint.textContent = fmt?.filesize_human ? `~${fmt.filesize_human}` : '';
 }
 
 /* ── Subtitle list ─────────────────────────────────────────────────────────── */
@@ -255,9 +441,9 @@ function renderSubtitles(subs) {
   wrap.innerHTML = '';
 
   const all = [];
-  Object.entries(subs.manual  || {}).forEach(([lang]) => all.push({ lang, auto: false }));
+  Object.entries(subs.manual    || {}).forEach(([lang]) => all.push({ lang, auto: false }));
   Object.entries(subs.automatic || {}).forEach(([lang]) => {
-    if (!subs.manual?.[lang]) all.push({ lang, auto: true });   // avoid duplicates
+    if (!subs.manual?.[lang]) all.push({ lang, auto: true });
   });
 
   if (!all.length) {
@@ -265,7 +451,6 @@ function renderSubtitles(subs) {
     return;
   }
 
-  // "None" option
   const none = document.createElement('div');
   none.className = 'sub-item selected';
   none.dataset.lang = '__none__';
@@ -303,13 +488,25 @@ async function addCurrentToQueue() {
   const result = State.currentResult;
   if (!result) return;
 
+  // Guard: at least one stream must be enabled
+  if (!State.videoEnabled && !State.audioEnabled) {
+    toast(I18N.t('download.no_streams'), 'error');
+    return;
+  }
+
   const options = {
-    format_video: State.selectedVideo,
-    format_audio: State.selectedAudio,
-    thumbnail:    result.thumbnail,
-    output_dir:   State.settings.output_dir,
+    thumbnail:            result.thumbnail,
+    output_dir:           State.settings.output_dir,
+    merge_output_format:  State.outputContainer || 'mp4',
   };
-  if (State.selectedSub) {
+
+  if (State.videoEnabled && State.selectedVideo)
+    options.format_video = State.selectedVideo;
+
+  if (State.audioEnabled && State.selectedAudio)
+    options.format_audio = State.selectedAudio;
+
+  if (State.subsEnabled && State.selectedSub) {
     options.subtitle_lang = State.selectedSub.lang;
     options.subtitle_auto = State.selectedSub.auto;
     options.embed_subs    = State.settings.embed_subs;
@@ -359,25 +556,72 @@ function buildDlItem(item) {
     ? `<img class="dl-thumb" src="${item.thumbnail}" alt="" onerror="this.style.display='none'">`
     : `<div class="dl-thumb-ph">⬇</div>`;
 
-  const isActive   = item.status === 'downloading';
-  const isComplete = item.status === 'completed';
-  const isError    = item.status === 'error';
+  const isActive    = item.status === 'downloading';
+  const isComplete  = item.status === 'completed';
+  const isPaused    = item.status === 'paused';
+  const isError     = item.status === 'error';
+  const isCancelled = item.status === 'cancelled';
 
-  const progressHTML = isActive ? `
+  const progressHTML = (isActive || isPaused) ? `
     <div class="dl-progress-row">
       <div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:${item.progress}%"></div></div>
       <span class="dl-pct">${item.progress.toFixed(0)}%</span>
     </div>
-    <div class="dl-meta">
-      <span class="dl-speed">${item.speed || ''}</span>
-      ${item.eta ? `· ETA ${item.eta}` : ''}
-    </div>` : '';
+    ${isActive ? `<div class="dl-meta"><span class="dl-speed">${item.speed || ''}</span>${item.eta ? ` · ETA ${item.eta}` : ''}</div>` : ''}` : '';
 
   const errorHTML = isError
-    ? `<div class="dl-meta" style="color:var(--danger)">${item.error || 'Error'}</div>` : '';
+    ? `<div class="dl-meta" style="color:var(--danger)">${parseYtdlpError(item.error)}</div>` : '';
 
   const badgeText = I18N.t(`queue.status.${item.status}`);
-  const pct = isActive ? `${item.progress.toFixed(0)}%` : '';
+  const safeFilename = (item.filename || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+
+  // SVG icons — defined once, reused across all states
+  const svgPause   = `<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>`;
+  const svgPlay    = `<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><polygon points="5,3 19,12 5,21"/></svg>`;
+  const svgX       = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`;
+  const svgRestart = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4.95"/></svg>`;
+  const svgBin     = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M9 6V4h6v2"/></svg>`;
+  const svgFolder  = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>`;
+  const svgFile    = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>`;
+
+  const btn = (onclick, title, icon) =>
+    `<button class="btn-icon" onclick="${onclick}" title="${title}">${icon}</button>`;
+
+  let actionsHTML;
+  if (isComplete) {
+    actionsHTML = `<div class="dl-item-actions">
+      ${btn(`openFolder('${safeFilename}')`, I18N.t('queue.open_folder'), svgFolder)}
+      ${btn(`openFile('${safeFilename}')`,   I18N.t('queue.open_file'),   svgFile)}
+      ${btn(`removeItem('${item.id}')`,      I18N.t('queue.remove'),      svgBin)}
+    </div>`;
+  } else if (isActive) {
+    actionsHTML = `<div class="dl-item-actions">
+      ${btn(`pauseItem('${item.id}')`,  I18N.t('queue.pause'),  svgPause)}
+      ${btn(`cancelItem('${item.id}')`, I18N.t('queue.cancel'), svgX)}
+    </div>`;
+  } else if (isPaused) {
+    actionsHTML = `<div class="dl-item-actions">
+      <span class="dl-status-badge badge-paused">${badgeText}</span>
+      ${btn(`resumeItem('${item.id}')`, I18N.t('queue.resume'), svgPlay)}
+      ${btn(`removeItem('${item.id}')`, I18N.t('queue.remove'), svgBin)}
+    </div>`;
+  } else if (isError) {
+    actionsHTML = `<div class="dl-item-actions">
+      <span class="dl-status-badge badge-error">${badgeText}</span>
+      ${btn(`restartItem('${item.id}')`, I18N.t('queue.restart'), svgRestart)}
+      ${btn(`removeItem('${item.id}')`,  I18N.t('queue.remove'),  svgBin)}
+    </div>`;
+  } else {
+    // PENDING or CANCELLED
+    actionsHTML = `<div class="dl-item-actions">
+      <span class="dl-status-badge badge-${item.status}">${badgeText}</span>
+      ${!isCancelled
+        ? btn(`cancelItem('${item.id}')`,  I18N.t('queue.cancel'),  svgX)
+        : btn(`restartItem('${item.id}')`, I18N.t('queue.restart'), svgRestart)
+          + btn(`removeItem('${item.id}')`, I18N.t('queue.remove'), svgBin)
+      }
+    </div>`;
+  }
 
   el.innerHTML = `
     ${thumbHTML}
@@ -386,19 +630,34 @@ function buildDlItem(item) {
       ${progressHTML}
       ${errorHTML}
     </div>
-    <div class="dl-actions">
-      <span class="dl-status-badge badge-${item.status}">${badgeText}</span>
-      ${!isComplete ? `<button class="btn-icon" onclick="removeItem('${item.id}')" data-i18n-title="queue.remove">✕</button>` : ''}
-      ${isError ? `<button class="btn-icon" onclick="retryItem('${item.id}')" title="Retry">↩</button>` : ''}
-    </div>`;
+    ${actionsHTML}`;
   return el;
 }
 
 function updateDlItem(item) {
-  const el = qs(`#dl-${item.id}`);
+  const el = document.getElementById(`dl-${item.id}`);
   if (!el) return;
   const fresh = buildDlItem(item);
   el.replaceWith(fresh);
+}
+
+// Lightweight progress-only update — does NOT rebuild the DOM node.
+// Only mutates the bar fill, percentage, speed and ETA text, leaving
+// the button elements entirely untouched so :hover state stays stable.
+function updateDlProgress(item) {
+  const el = document.getElementById(`dl-${item.id}`);
+  if (!el) return;
+
+  const fill  = el.querySelector('.progress-bar-fill');
+  const pct   = el.querySelector('.dl-pct');
+  const speed = el.querySelector('.dl-speed');
+  const meta  = el.querySelector('.dl-meta');
+
+  if (fill)  fill.style.width   = `${item.progress}%`;
+  if (pct)   pct.textContent    = `${item.progress.toFixed(0)}%`;
+  if (speed) speed.textContent  = item.speed || '';
+  if (meta)  meta.innerHTML =
+    `<span class="dl-speed">${item.speed || ''}</span>${item.eta ? ` · ETA ${item.eta}` : ''}`;
 }
 
 function renderStats(stats) {
@@ -414,13 +673,74 @@ function updateQueueBadge(total) {
 }
 
 async function removeItem(id) {
+  // Remove from DOM first (optimistic), then sync with server.
+  document.getElementById(`dl-${id}`)?.remove();
   try { await API.removeFromQueue(id); } catch {}
-  qs(`#dl-${id}`)?.remove();
+}
+
+async function cancelItem(id) {
+  // Mark as CANCELLED (red, stays in list) without removing.
+  try { await API.cancelItem(id); } catch {}
+}
+
+async function pauseItem(id) {
+  try { await API.pauseItem(id); } catch (err) {
+    console.warn('[GRABBIT] pauseItem failed:', err);
+  }
+}
+
+async function resumeItem(id) {
+  try { await API.resumeItem(id); } catch (err) {
+    console.warn('[GRABBIT] resumeItem failed:', err);
+  }
 }
 
 async function retryItem(id) {
-  // TODO: Phase 6 — re-analyze and re-add
-  toast('Retry coming in Phase 6', 'info');
+  await restartItem(id);
+}
+
+async function restartItem(id) {
+  try { await API.restartItem(id); } catch (err) {
+    console.warn('[GRABBIT] restartItem failed:', err);
+  }
+}
+
+async function clearCompleted() {
+  try { await API.clearCompleted(); } catch {}
+}
+
+async function clearAll() {
+  const ok = await showDialog({
+    title:       I18N.t('dialog.clear_all_title'),
+    message:     I18N.t('dialog.clear_all_msg'),
+    confirmText: I18N.t('dialog.clear_all_confirm'),
+    cancelText:  I18N.t('dialog.cancel'),
+    danger:      true,
+  });
+  if (ok) {
+    try { await API.clearAll(); } catch {}
+  }
+}
+
+// Open the downloaded file with the system's default application.
+// Does nothing if filename is empty (download still in progress or path unknown).
+async function openFile(path) {
+  if (!path) { toast(I18N.t('errors.file_not_found'), 'error'); return; }
+  try {
+    if (window.pywebview?.api?.open_file) await window.pywebview.api.open_file(path);
+  } catch (err) {
+    console.error('[GRABBIT] openFile failed:', err);
+  }
+}
+
+// Open the folder containing the downloaded file in the system file manager.
+async function openFolder(path) {
+  if (!path) { toast(I18N.t('errors.file_not_found'), 'error'); return; }
+  try {
+    if (window.pywebview?.api?.open_folder) await window.pywebview.api.open_folder(path);
+  } catch (err) {
+    console.error('[GRABBIT] openFolder failed:', err);
+  }
 }
 
 /* ── Playlist flow ─────────────────────────────────────────────────────────── */
@@ -620,7 +940,10 @@ function initWebSocket() {
   });
 
   API.WS.on('progress', ({ item, stats }) => {
-    updateDlItem(item);
+    // Lightweight update: only touch the progress bar and meta text.
+    // Calling updateDlItem (full DOM rebuild) on every progress tick resets
+    // :hover state and causes the buttons to visibly "vibrate".
+    updateDlProgress(item);
     renderStats(stats);
   });
 
@@ -631,10 +954,14 @@ function initWebSocket() {
       toast(I18N.t('queue.done', { title: item.title }), 'success');
     }
     if (item.status === 'error') {
-      // Parse the raw yt-dlp error into a readable message
       const friendly = parseYtdlpError(item.error);
       toast(`${item.title}: ${friendly}`, 'error');
     }
+  });
+
+  // Fired after bulk operations (clear all / clear completed)
+  API.WS.on('queue_update', ({ items, stats }) => {
+    renderQueue(items, stats);
   });
 }
 
@@ -672,7 +999,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     qs('#save-settings-btn').addEventListener('click', saveSettingsFromForm);
 
     qs('#reset-settings-btn').addEventListener('click', async () => {
-      if (confirm(I18N.t('settings.reset_confirm'))) {
+      const ok = await showDialog({
+        title:       I18N.t('settings.reset_confirm_title'),
+        message:     I18N.t('settings.reset_confirm'),
+        confirmText: I18N.t('settings.reset'),
+        cancelText:  I18N.t('dialog.cancel'),
+        danger:      true,
+      });
+      if (ok) {
         try {
           State.settings = await API.resetSettings();
           renderSettings();
@@ -682,6 +1016,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
       }
     });
+
+    // Global queue controls
+    qs('#btn-pause-all').addEventListener('click', async () => {
+      try { await API.pauseAll(); } catch {}
+    });
+    qs('#btn-resume-all').addEventListener('click', async () => {
+      try { await API.resumeAll(); } catch {}
+    });
+    qs('#btn-clear-completed').addEventListener('click', clearCompleted);
+    qs('#btn-clear-all').addEventListener('click', clearAll);
 
     // Playlist action buttons (present only on the download tab)
     qs('#playlist-select-all')?.addEventListener('click', () => selectAllPlaylist(true));
@@ -726,31 +1070,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     // ── Auto-paste from clipboard on window focus ───────────────────────────
-    // When the app window regains visibility and the URL field is empty,
-    // check the clipboard for a URL and pre-fill it.
-    document.addEventListener('visibilitychange', async () => {
-      if (document.visibilityState !== 'visible') return;
-      if (qs('#url-input').value.trim()) return;
-
-      let text = '';
-
-      // Try pywebview Python bridge first — most reliable inside Qt WebEngine
-      // because the browser clipboard API requires explicit user permissions.
-      try {
-        if (window.pywebview?.api?.get_clipboard) {
-          text = await window.pywebview.api.get_clipboard();
-        }
-      } catch {}
-
-      // Fallback: standard browser Clipboard API (works on macOS / Windows)
-      if (!text) {
-        try { text = await navigator.clipboard.readText(); } catch {}
-      }
-
-      if (text && /^https?:\/\//i.test(text.trim())) {
-        qs('#url-input').value = text.trim();
-        toast(I18N.t('download.auto_pasted'), 'info', 2500);
-      }
+    // Re-uses checkAndAutoPaste() — same logic as switching to the Download tab.
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') checkAndAutoPaste();
     });
 
   } catch (err) {

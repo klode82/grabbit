@@ -50,6 +50,34 @@ window.API = (() => {
     return _request('POST', `/api/queue/${itemId}/cancel`);
   }
 
+  function pauseItem(itemId) {
+    return _request('POST', `/api/queue/${itemId}/pause`);
+  }
+
+  function resumeItem(itemId) {
+    return _request('POST', `/api/queue/${itemId}/resume`);
+  }
+
+  function restartItem(itemId) {
+    return _request('POST', `/api/queue/${itemId}/restart`);
+  }
+
+  function pauseAll() {
+    return _request('POST', '/api/queue/pause-all');
+  }
+
+  function resumeAll() {
+    return _request('POST', '/api/queue/resume-all');
+  }
+
+  function clearCompleted() {
+    return _request('DELETE', '/api/queue/completed');
+  }
+
+  function clearAll() {
+    return _request('DELETE', '/api/queue/all');
+  }
+
   // ── Settings ──────────────────────────────────────────────────────────────
 
   function getSettings() {
@@ -125,6 +153,13 @@ window.API = (() => {
     addToQueue,
     removeFromQueue,
     cancelItem,
+    pauseItem,
+    resumeItem,
+    restartItem,
+    pauseAll,
+    resumeAll,
+    clearCompleted,
+    clearAll,
     getSettings,
     saveSettings,
     resetSettings,
