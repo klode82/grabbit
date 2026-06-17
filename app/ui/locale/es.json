@@ -1,0 +1,39 @@
+{
+  "nav": { "download": "Descargar", "queue": "Cola", "settings": "Ajustes" },
+  "header": { "dark_mode": "Modo oscuro", "light_mode": "Modo claro" },
+  "download": {
+    "placeholder": "Pega una URL (YouTube, Vimeo, TikTok…)",
+    "hint": "Compatible con más de 1000 sitios vía yt-dlp.",
+    "analyze": "Analizar",
+    "add_queue": "Añadir a la cola"
+  },
+  "analyze": { "loading": "Analizando…", "subs_yes": "Subtítulos disponibles", "subs_no": "Sin subtítulos" },
+  "formats": { "video": "Calidad de video", "audio": "Pista de audio", "subtitles": "Subtítulos", "none": "Sin formatos disponibles" },
+  "subtitles": { "none": "Sin subtítulos", "none_option": "Ninguno", "manual": "Manual", "auto": "Generado automáticamente" },
+  "queue": {
+    "empty": "Sin descargas todavía. Analiza una URL para empezar.",
+    "added": "Añadido a la cola",
+    "remove": "Eliminar",
+    "done": "Descarga completa: {title}",
+    "error": "Error: {title}",
+    "stat_total": "Total", "stat_active": "Descargando", "stat_done": "Completados",
+    "status": { "pending": "Pendiente", "downloading": "Descargando", "completed": "Completado", "error": "Error", "cancelled": "Cancelado" }
+  },
+  "playlist": {
+    "untitled": "Lista de reproducción", "count": "{n} vídeos",
+    "analyzing_start": "Analizando lista…", "analyzing": "Analizando {done} de {total}…",
+    "done": "Hecho — {n} vídeos analizados",
+    "select_all": "Seleccionar todo", "deselect_all": "Deseleccionar todo",
+    "add_selected": "Añadir selección", "none_selected": "Ningún vídeo seleccionado", "added": "{n} vídeos añadidos"
+  },
+  "settings": {
+    "group_interface": "Interfaz", "group_video": "Vídeo", "group_audio": "Audio", "group_subs": "Subtítulos", "group_network": "Red",
+    "language": "Idioma", "output_dir": "Carpeta de descarga", "max_concurrent": "Descargas simultáneas máx.",
+    "video_quality": "Calidad predeterminada", "audio_quality": "Calidad predeterminada", "audio_format": "Formato", "audio_lang": "Idioma preferido",
+    "sub_lang": "Idioma preferido", "sub_auto": "Incluir generados automáticamente", "embed_subs": "Incrustar subtítulos",
+    "rate_limit": "Límite de velocidad", "rate_limit_hint": "Vacío = ilimitado", "cookies": "Archivo cookies", "proxy": "Proxy",
+    "best": "El mejor disponible", "save": "Guardar", "reset": "Restablecer",
+    "saved": "Ajustes guardados", "reset_confirm": "¿Restablecer todos los ajustes?", "reset_done": "Ajustes restablecidos"
+  },
+  "common": { "cancel": "Cancelar", "close": "Cerrar", "ok": "OK" }
+}

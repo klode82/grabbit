@@ -1,0 +1,12 @@
+pywebview>=5.0.5
+fastapi>=0.115.0
+uvicorn>=0.30.0
+yt-dlp>=2024.11.18
+python-multipart>=0.0.12
+websockets>=13.0
+aiofiles>=24.1.0
+pydantic>=2.9.0
+
+# Linux only — pywebview GUI backend (macOS e Windows usano il webview nativo del sistema)
+PySide6>=6.7.0; sys_platform == "linux"
+qtpy>=2.4.0; sys_platform == "linux"

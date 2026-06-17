@@ -1,0 +1,95 @@
+{
+  "nav": {
+    "download": "Download",
+    "queue": "Queue",
+    "settings": "Settings"
+  },
+  "header": {
+    "dark_mode": "Switch to dark mode",
+    "light_mode": "Switch to light mode"
+  },
+  "download": {
+    "placeholder": "Paste URL here (YouTube, Vimeo, TikTok, SoundCloud…)",
+    "hint": "Supports 1000+ sites via yt-dlp.",
+    "analyze": "Analyze",
+    "add_queue": "Add to queue"
+  },
+  "analyze": {
+    "loading": "Analyzing URL…",
+    "subs_yes": "Subtitles available",
+    "subs_no": "No subtitles"
+  },
+  "formats": {
+    "video": "Video quality",
+    "audio": "Audio track",
+    "subtitles": "Subtitles",
+    "none": "No formats available"
+  },
+  "subtitles": {
+    "none": "No subtitles available",
+    "none_option": "None",
+    "manual": "Manual",
+    "auto": "Auto-generated"
+  },
+  "queue": {
+    "empty": "No downloads yet. Analyze a URL to get started.",
+    "added": "Added to queue",
+    "remove": "Remove",
+    "done": "Download complete: {title}",
+    "error": "Download failed: {title}",
+    "stat_total": "Total",
+    "stat_active": "Downloading",
+    "stat_done": "Completed",
+    "status": {
+      "pending": "Pending",
+      "downloading": "Downloading",
+      "completed": "Completed",
+      "error": "Error",
+      "cancelled": "Cancelled"
+    }
+  },
+  "playlist": {
+    "untitled": "Playlist",
+    "count": "{n} videos",
+    "analyzing_start": "Analyzing playlist…",
+    "analyzing": "Analyzing {done} of {total}…",
+    "done": "Done — {n} videos analyzed",
+    "select_all": "Select all",
+    "deselect_all": "Deselect all",
+    "add_selected": "Add selected to queue",
+    "none_selected": "No videos selected",
+    "added": "{n} videos added to queue"
+  },
+  "settings": {
+    "group_interface": "Interface",
+    "group_video": "Video",
+    "group_audio": "Audio",
+    "group_subs": "Subtitles",
+    "group_network": "Network",
+    "language": "Language",
+    "output_dir": "Download folder",
+    "max_concurrent": "Max concurrent downloads",
+    "video_quality": "Default quality",
+    "audio_quality": "Default quality",
+    "audio_format": "Format",
+    "audio_lang": "Preferred language",
+    "sub_lang": "Preferred language",
+    "sub_auto": "Include auto-generated",
+    "embed_subs": "Embed subtitles in file",
+    "rate_limit": "Rate limit",
+    "rate_limit_hint": "Empty = unlimited",
+    "cookies": "Cookies file",
+    "proxy": "Proxy",
+    "best": "Best available",
+    "save": "Save settings",
+    "reset": "Reset defaults",
+    "saved": "Settings saved",
+    "reset_confirm": "Reset all settings to defaults?",
+    "reset_done": "Settings reset to defaults"
+  },
+  "common": {
+    "cancel": "Cancel",
+    "close": "Close",
+    "ok": "OK"
+  }
+}

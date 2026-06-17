@@ -1,0 +1,39 @@
+{
+  "nav": { "download": "Baixar", "queue": "Fila", "settings": "Configurações" },
+  "header": { "dark_mode": "Modo escuro", "light_mode": "Modo claro" },
+  "download": {
+    "placeholder": "Cole uma URL (YouTube, Vimeo, TikTok…)",
+    "hint": "Compatível com mais de 1000 sites via yt-dlp.",
+    "analyze": "Analisar",
+    "add_queue": "Adicionar à fila"
+  },
+  "analyze": { "loading": "Analisando…", "subs_yes": "Legendas disponíveis", "subs_no": "Sem legendas" },
+  "formats": { "video": "Qualidade de vídeo", "audio": "Faixa de áudio", "subtitles": "Legendas", "none": "Sem formatos disponíveis" },
+  "subtitles": { "none": "Sem legendas", "none_option": "Nenhuma", "manual": "Manual", "auto": "Gerado automaticamente" },
+  "queue": {
+    "empty": "Nenhum download ainda. Analise uma URL para começar.",
+    "added": "Adicionado à fila",
+    "remove": "Remover",
+    "done": "Download concluído: {title}",
+    "error": "Erro: {title}",
+    "stat_total": "Total", "stat_active": "Baixando", "stat_done": "Concluídos",
+    "status": { "pending": "Pendente", "downloading": "Baixando", "completed": "Concluído", "error": "Erro", "cancelled": "Cancelado" }
+  },
+  "playlist": {
+    "untitled": "Playlist", "count": "{n} vídeos",
+    "analyzing_start": "Analisando playlist…", "analyzing": "Analisando {done} de {total}…",
+    "done": "Concluído — {n} vídeos analisados",
+    "select_all": "Selecionar tudo", "deselect_all": "Desmarcar tudo",
+    "add_selected": "Adicionar seleção", "none_selected": "Nenhum vídeo selecionado", "added": "{n} vídeos adicionados"
+  },
+  "settings": {
+    "group_interface": "Interface", "group_video": "Vídeo", "group_audio": "Áudio", "group_subs": "Legendas", "group_network": "Rede",
+    "language": "Idioma", "output_dir": "Pasta de download", "max_concurrent": "Downloads simultâneos máx.",
+    "video_quality": "Qualidade padrão", "audio_quality": "Qualidade padrão", "audio_format": "Formato", "audio_lang": "Idioma preferido",
+    "sub_lang": "Idioma preferido", "sub_auto": "Incluir gerados automaticamente", "embed_subs": "Incorporar legendas",
+    "rate_limit": "Limite de velocidade", "rate_limit_hint": "Vazio = ilimitado", "cookies": "Arquivo de cookies", "proxy": "Proxy",
+    "best": "Melhor disponível", "save": "Salvar", "reset": "Redefinir",
+    "saved": "Configurações salvas", "reset_confirm": "Redefinir todas as configurações?", "reset_done": "Configurações redefinidas"
+  },
+  "common": { "cancel": "Cancelar", "close": "Fechar", "ok": "OK" }
+}

@@ -1,0 +1,95 @@
+{
+  "nav": {
+    "download": "Download",
+    "queue": "Coda",
+    "settings": "Impostazioni"
+  },
+  "header": {
+    "dark_mode": "Passa alla modalità scura",
+    "light_mode": "Passa alla modalità chiara"
+  },
+  "download": {
+    "placeholder": "Incolla un URL (YouTube, Vimeo, TikTok, SoundCloud…)",
+    "hint": "Compatibile con oltre 1000 siti grazie a yt-dlp.",
+    "analyze": "Analizza",
+    "add_queue": "Aggiungi alla coda"
+  },
+  "analyze": {
+    "loading": "Analisi in corso…",
+    "subs_yes": "Sottotitoli disponibili",
+    "subs_no": "Nessun sottotitolo"
+  },
+  "formats": {
+    "video": "Qualità video",
+    "audio": "Traccia audio",
+    "subtitles": "Sottotitoli",
+    "none": "Nessun formato disponibile"
+  },
+  "subtitles": {
+    "none": "Nessun sottotitolo disponibile",
+    "none_option": "Nessuno",
+    "manual": "Manuale",
+    "auto": "Auto-generato"
+  },
+  "queue": {
+    "empty": "Nessun download ancora. Analizza un URL per iniziare.",
+    "added": "Aggiunto alla coda",
+    "remove": "Rimuovi",
+    "done": "Download completato: {title}",
+    "error": "Download fallito: {title}",
+    "stat_total": "Totale",
+    "stat_active": "In download",
+    "stat_done": "Completati",
+    "status": {
+      "pending": "In attesa",
+      "downloading": "Scaricamento",
+      "completed": "Completato",
+      "error": "Errore",
+      "cancelled": "Annullato"
+    }
+  },
+  "playlist": {
+    "untitled": "Playlist",
+    "count": "{n} video",
+    "analyzing_start": "Analisi playlist in corso…",
+    "analyzing": "Analisi video {done} di {total}…",
+    "done": "Completato — {n} video analizzati",
+    "select_all": "Seleziona tutto",
+    "deselect_all": "Deseleziona tutto",
+    "add_selected": "Aggiungi selezionati alla coda",
+    "none_selected": "Nessun video selezionato",
+    "added": "{n} video aggiunti alla coda"
+  },
+  "settings": {
+    "group_interface": "Interfaccia",
+    "group_video": "Video",
+    "group_audio": "Audio",
+    "group_subs": "Sottotitoli",
+    "group_network": "Rete",
+    "language": "Lingua",
+    "output_dir": "Cartella download",
+    "max_concurrent": "Download simultanei massimi",
+    "video_quality": "Qualità predefinita",
+    "audio_quality": "Qualità predefinita",
+    "audio_format": "Formato",
+    "audio_lang": "Lingua preferita",
+    "sub_lang": "Lingua preferita",
+    "sub_auto": "Includi auto-generati",
+    "embed_subs": "Incorpora sottotitoli nel file",
+    "rate_limit": "Limite velocità",
+    "rate_limit_hint": "Vuoto = illimitato",
+    "cookies": "File cookies",
+    "proxy": "Proxy",
+    "best": "Migliore disponibile",
+    "save": "Salva impostazioni",
+    "reset": "Ripristina predefiniti",
+    "saved": "Impostazioni salvate",
+    "reset_confirm": "Ripristinare tutte le impostazioni ai valori predefiniti?",
+    "reset_done": "Impostazioni ripristinate"
+  },
+  "common": {
+    "cancel": "Annulla",
+    "close": "Chiudi",
+    "ok": "OK"
+  }
+}

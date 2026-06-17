@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GRABBIT</title>
+  <link rel="stylesheet" href="/static/css/main.css">
+</head>
+<body>
+<div id="app">
+
+  <!-- ── Header ─────────────────────────────────────────────────────────── -->
+  <header class="app-header">
+    <div class="logo">
+      <svg class="logo-icon" width="26" height="30" viewBox="0 0 26 30" fill="none">
+        <!-- Left ear -->
+        <rect x="3" y="0" width="8" height="16" rx="4" fill="var(--accent)"/>
+        <!-- Right ear -->
+        <rect x="15" y="0" width="8" height="16" rx="4" fill="var(--accent)"/>
+        <!-- Head -->
+        <ellipse cx="13" cy="23" rx="11" ry="7" fill="var(--accent)"/>
+        <!-- Eyes -->
+        <circle cx="9.5"  cy="22" r="1.8" fill="var(--bg)"/>
+        <circle cx="16.5" cy="22" r="1.8" fill="var(--bg)"/>
+        <!-- Nose -->
+        <path d="M11.8 25 Q13 26 14.2 25" stroke="var(--bg)" stroke-width="1.2" stroke-linecap="round" fill="none"/>
+      </svg>
+      <span class="logo-text">GRABBIT</span>
+    </div>
+    <div class="header-right">
+      <button class="btn-icon" id="theme-toggle" data-i18n-title="header.dark_mode">
+        <span id="theme-toggle-icon">☀️</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- ── Navigation ─────────────────────────────────────────────────────── -->
+  <nav class="app-nav">
+    <button class="nav-tab active" data-tab="download">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4-4m4 4l4-4"/><path d="M3 17v2a2 2 0 002 2h14a2 2 0 002-2v-2"/></svg>
+      <span data-i18n="nav.download">Download</span>
+    </button>
+    <button class="nav-tab" data-tab="queue">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+      <span data-i18n="nav.queue">Queue</span>
+      <span class="nav-badge hidden" id="queue-badge">0</span>
+    </button>
+    <button class="nav-tab" data-tab="settings">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+      <span data-i18n="nav.settings">Settings</span>
+    </button>
+  </nav>
+
+  <!-- ── Content ────────────────────────────────────────────────────────── -->
+  <main class="app-content">
+
+    <!-- ── Download tab ──────────────────────────────────────────────────── -->
+    <section id="tab-download" class="tab-pane active">
+
+      <!-- URL Input -->
+      <div class="url-section">
+        <div class="url-row">
+          <input class="input" type="url" id="url-input"
+            data-i18n-placeholder="download.placeholder"
+            placeholder="Paste URL here…" autocomplete="off" spellcheck="false">
+          <button class="btn btn-primary" id="analyze-btn">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+            <span data-i18n="download.analyze">Analyze</span>
+          </button>
+        </div>
+        <p class="url-hint" data-i18n="download.hint">
+          Supports YouTube, Vimeo, Twitter, TikTok, SoundCloud, and 1000+ more sites.
+        </p>
+      </div>
+
+      <!-- Analysis loading -->
+      <div class="analyze-loading" id="analyze-loading">
+        <div class="analyze-loading-label">
+          <span id="analyze-loading-label" data-i18n="analyze.loading">Analyzing…</span>
+          <span class="muted small" id="analyze-progress-pct"></span>
+        </div>
+        <div class="progress-bar-wrap">
+          <div class="progress-bar-fill indeterminate" id="analyze-progress-fill" style="width:40%"></div>
+        </div>
+      </div>
+
+      <!-- Playlist analysis panel -->
+      <div class="playlist-analysis" id="playlist-analysis">
+        <div class="playlist-header">
+          <span class="playlist-title" id="playlist-title-text"></span>
+          <span class="playlist-count" id="playlist-count-text"></span>
+        </div>
+        <div class="analyze-loading-label">
+          <span id="playlist-progress-label" data-i18n="playlist.analyzing_start">Analyzing playlist…</span>
+        </div>
+        <div class="progress-bar-wrap" style="margin-bottom:14px">
+          <div class="progress-bar-fill" id="playlist-progress-fill" style="width:0%"></div>
+        </div>
+        <div style="display:flex;gap:8px;margin-bottom:10px">
+          <button class="btn btn-ghost small" id="playlist-select-all" data-i18n="playlist.select_all">Select all</button>
+          <button class="btn btn-ghost small" id="playlist-deselect-all" data-i18n="playlist.deselect_all">Deselect all</button>
+          <button class="btn btn-primary" id="playlist-add-all" disabled data-i18n="playlist.add_selected">Add selected to queue</button>
+        </div>
+        <div class="playlist-items" id="playlist-items"></div>
+      </div>
+
+      <!-- Video result card -->
+      <div class="result-card" id="result-card">
+
+        <!-- Header: thumbnail + meta -->
+        <div class="result-header">
+          <img class="result-thumb" id="result-thumb" src="" alt="" style="display:none">
+          <div class="result-thumb-placeholder" id="result-thumb-ph">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+          </div>
+          <div class="result-meta">
+            <div class="result-title" id="result-title"></div>
+            <div class="result-sub">
+              <span>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+                <span id="result-duration"></span>
+              </span>
+              <span id="result-extractor" style="color:var(--accent)"></span>
+              <span id="result-uploader"></span>
+            </div>
+            <!-- Summary pills -->
+            <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">
+              <span class="dl-status-badge badge-downloading" style="font-size:11px">
+                🎬 <span id="result-best-video"></span>
+              </span>
+              <span class="dl-status-badge badge-downloading" style="font-size:11px">
+                🔊 <span id="result-best-audio"></span>
+              </span>
+              <span class="dl-status-badge badge-completed" style="font-size:11px" id="result-has-subs"></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Video format selector -->
+        <div class="format-section">
+          <div class="format-section-title" data-i18n="formats.video">Video quality</div>
+          <div class="format-grid" id="video-formats"></div>
+        </div>
+
+        <!-- Audio format selector -->
+        <div class="format-section">
+          <div class="format-section-title" data-i18n="formats.audio">Audio track</div>
+          <div class="format-grid" id="audio-formats"></div>
+        </div>
+
+        <!-- Subtitle selector -->
+        <div class="format-section">
+          <div class="format-section-title" data-i18n="formats.subtitles">Subtitles</div>
+          <div class="sub-list" id="sub-list"></div>
+        </div>
+
+        <!-- Footer actions -->
+        <div class="result-footer">
+          <button class="btn btn-ghost" onclick="resetResult()" data-i18n="common.cancel">Cancel</button>
+          <button class="btn btn-primary" id="add-queue-btn">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+            <span data-i18n="download.add_queue">Add to queue</span>
+          </button>
+        </div>
+      </div>
+
+    </section><!-- /tab-download -->
+
+
+    <!-- ── Queue tab ─────────────────────────────────────────────────────── -->
+    <section id="tab-queue" class="tab-pane">
+
+      <div class="queue-stats">
+        <div class="stat-card">
+          <span class="stat-num" id="stat-total">0</span>
+          <span class="stat-label" data-i18n="queue.stat_total">Total</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-num active" id="stat-active">0</span>
+          <span class="stat-label" data-i18n="queue.stat_active">Downloading</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-num done" id="stat-done">0</span>
+          <span class="stat-label" data-i18n="queue.stat_done">Completed</span>
+        </div>
+      </div>
+
+      <div class="dl-list" id="dl-list">
+        <div class="empty-state">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M12 3v12m0 0l-4-4m4 4l4-4M3 17v2a2 2 0 002 2h14a2 2 0 002-2v-2"/>
+          </svg>
+          <p data-i18n="queue.empty">No downloads yet. Analyze a URL to get started.</p>
+        </div>
+      </div>
+
+    </section><!-- /tab-queue -->
+
+
+    <!-- ── Settings tab ──────────────────────────────────────────────────── -->
+    <section id="tab-settings" class="tab-pane">
+
+      <div class="settings-grid">
+
+        <!-- Interface -->
+        <div class="settings-group">
+          <div class="settings-group-title" data-i18n="settings.group_interface">Interface</div>
+
+          <div class="settings-row">
+            <label class="settings-label" for="s-lang" data-i18n="settings.language">Language</label>
+            <select class="select" id="s-lang">
+              <option value="en">English</option>
+              <option value="it">Italiano</option>
+              <option value="fr">Français</option>
+              <option value="de">Deutsch</option>
+              <option value="es">Español</option>
+              <option value="pt">Português</option>
+            </select>
+          </div>
+
+          <div class="settings-row">
+            <label class="settings-label" for="s-output-dir" data-i18n="settings.output_dir">Download folder</label>
+            <input class="input" type="text" id="s-output-dir">
+          </div>
+
+          <div class="settings-row">
+            <label class="settings-label" for="s-max-dl" data-i18n="settings.max_concurrent">Max concurrent downloads</label>
+            <select class="select" id="s-max-dl">
+              <option value="1">1</option>
+              <option value="2">2</option>
+              <option value="3">3</option>
+              <option value="4">4</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Video -->
+        <div class="settings-group">
+          <div class="settings-group-title" data-i18n="settings.group_video">Video</div>
+
+          <div class="settings-row">
+            <label class="settings-label" for="s-video-q" data-i18n="settings.video_quality">Default quality</label>
+            <select class="select" id="s-video-q">
+              <option value="best" data-i18n="settings.best">Best available</option>
+              <option value="2160">4K (2160p)</option>
+              <option value="1440">1440p</option>
+              <option value="1080">1080p</option>
+              <option value="720">720p</option>
+              <option value="576">576p</option>
+              <option value="480">480p</option>
+              <option value="360">360p</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Audio -->
+        <div class="settings-group">
+          <div class="settings-group-title" data-i18n="settings.group_audio">Audio</div>
+
+          <div class="settings-row">
+            <label class="settings-label" for="s-audio-q" data-i18n="settings.audio_quality">Default quality</label>
+            <select class="select" id="s-audio-q">
+              <option value="best" data-i18n="settings.best">Best available</option>
+              <option value="320">320 kbps</option>
+              <option value="256">256 kbps</option>
+              <option value="192">192 kbps</option>
+              <option value="128">128 kbps</option>
+            </select>
+          </div>
+
+          <div class="settings-row">
+            <label class="settings-label" for="s-audio-ext" data-i18n="settings.audio_format">Format</label>
+            <select class="select" id="s-audio-ext">
+              <option value="m4a">M4A (AAC)</option>
+              <option value="mp3">MP3</option>
+              <option value="opus">Opus</option>
+              <option value="flac">FLAC</option>
+              <option value="wav">WAV</option>
+            </select>
+          </div>
+
+          <div class="settings-row">
+            <label class="settings-label" for="s-audio-lang" data-i18n="settings.audio_lang">Preferred language</label>
+            <input class="input" type="text" id="s-audio-lang" placeholder="e.g. en, it, fr">
+          </div>
+        </div>
+
+        <!-- Subtitles -->
+        <div class="settings-group">
+          <div class="settings-group-title" data-i18n="settings.group_subs">Subtitles</div>
+
+          <div class="settings-row">
+            <label class="settings-label" for="s-sub-lang" data-i18n="settings.sub_lang">Preferred language</label>
+            <input class="input" type="text" id="s-sub-lang" placeholder="e.g. en, it">
+          </div>
+
+          <div class="toggle-row">
+            <span class="settings-label" data-i18n="settings.sub_auto">Include auto-generated</span>
+            <label class="toggle"><input type="checkbox" id="s-sub-auto"><span class="toggle-slider"></span></label>
+          </div>
+
+          <div class="toggle-row">
+            <span class="settings-label" data-i18n="settings.embed_subs">Embed subtitles in file</span>
+            <label class="toggle"><input type="checkbox" id="s-embed-subs"><span class="toggle-slider"></span></label>
+          </div>
+        </div>
+
+        <!-- Network -->
+        <div class="settings-group full">
+          <div class="settings-group-title" data-i18n="settings.group_network">Network</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
+            <div class="settings-row">
+              <label class="settings-label" for="s-rate-limit" data-i18n="settings.rate_limit">Rate limit</label>
+              <input class="input" type="text" id="s-rate-limit" placeholder="e.g. 1M">
+              <span class="settings-hint" data-i18n="settings.rate_limit_hint">Empty = unlimited</span>
+            </div>
+            <div class="settings-row">
+              <label class="settings-label" for="s-cookies" data-i18n="settings.cookies">Cookies file</label>
+              <input class="input" type="text" id="s-cookies" placeholder="/path/to/cookies.txt">
+            </div>
+            <div class="settings-row">
+              <label class="settings-label" for="s-proxy" data-i18n="settings.proxy">Proxy</label>
+              <input class="input" type="text" id="s-proxy" placeholder="socks5://127.0.0.1:1080">
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /settings-grid -->
+
+      <!-- Save / Reset -->
+      <div style="display:flex;gap:8px;justify-content:flex-end;max-width:720px;margin:16px auto 0">
+        <button class="btn btn-secondary" id="reset-settings-btn" data-i18n="settings.reset">Reset defaults</button>
+        <button class="btn btn-primary" id="save-settings-btn" data-i18n="settings.save">Save settings</button>
+      </div>
+
+    </section><!-- /tab-settings -->
+
+  </main>
+
+  <!-- ── Toast container ──────────────────────────────────────────────────── -->
+  <div id="toast-container"></div>
+
+</div><!-- #app -->
+
+<script src="/static/js/i18n.js"></script>
+<script src="/static/js/api.js"></script>
+<script src="/static/js/app.js"></script>
+</body>
+</html>
