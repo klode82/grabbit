@@ -1,39 +1,115 @@
 {
-  "nav": { "download": "Télécharger", "queue": "File", "settings": "Paramètres" },
-  "header": { "dark_mode": "Mode sombre", "light_mode": "Mode clair" },
+  "nav": {
+    "download": "Télécharger",
+    "queue": "File",
+    "settings": "Paramètres"
+  },
+  "header": {
+    "dark_mode": "Mode sombre",
+    "light_mode": "Mode clair"
+  },
   "download": {
     "placeholder": "Coller une URL (YouTube, Vimeo, TikTok…)",
     "hint": "Compatible avec plus de 1000 sites via yt-dlp.",
     "analyze": "Analyser",
-    "add_queue": "Ajouter à la file"
+    "add_queue": "Ajouter à la file",
+    "drop_here": "Déposer pour analyser",
+    "auto_pasted": "URL collée depuis le presse-papiers"
   },
-  "analyze": { "loading": "Analyse en cours…", "subs_yes": "Sous-titres disponibles", "subs_no": "Pas de sous-titres" },
-  "formats": { "video": "Qualité vidéo", "audio": "Piste audio", "subtitles": "Sous-titres", "none": "Aucun format disponible" },
-  "subtitles": { "none": "Aucun sous-titre", "none_option": "Aucun", "manual": "Manuel", "auto": "Généré automatiquement" },
+  "analyze": {
+    "loading": "Analyse en cours…",
+    "subs_yes": "Sous-titres disponibles",
+    "subs_no": "Pas de sous-titres"
+  },
+  "formats": {
+    "video": "Qualité vidéo",
+    "audio": "Piste audio",
+    "subtitles": "Sous-titres",
+    "none": "Aucun format disponible"
+  },
+  "subtitles": {
+    "none": "Aucun sous-titre",
+    "none_option": "Aucun",
+    "manual": "Manuel",
+    "auto": "Généré automatiquement"
+  },
   "queue": {
     "empty": "Aucun téléchargement. Analysez une URL pour commencer.",
     "added": "Ajouté à la file",
     "remove": "Supprimer",
     "done": "Téléchargement terminé : {title}",
     "error": "Erreur : {title}",
-    "stat_total": "Total", "stat_active": "En cours", "stat_done": "Terminés",
-    "status": { "pending": "En attente", "downloading": "Téléchargement", "completed": "Terminé", "error": "Erreur", "cancelled": "Annulé" }
+    "stat_total": "Total",
+    "stat_active": "En cours",
+    "stat_done": "Terminés",
+    "status": {
+      "pending": "En attente",
+      "downloading": "Téléchargement",
+      "completed": "Terminé",
+      "error": "Erreur",
+      "cancelled": "Annulé"
+    }
   },
   "playlist": {
-    "untitled": "Playlist", "count": "{n} vidéos",
-    "analyzing_start": "Analyse de la playlist…", "analyzing": "Analyse {done} / {total}…",
+    "untitled": "Playlist",
+    "count": "{n} vidéos",
+    "analyzing_start": "Analyse de la playlist…",
+    "analyzing": "Analyse {done} / {total}…",
     "done": "Terminé — {n} vidéos analysées",
-    "select_all": "Tout sélectionner", "deselect_all": "Tout désélectionner",
-    "add_selected": "Ajouter la sélection", "none_selected": "Aucune vidéo sélectionnée", "added": "{n} vidéos ajoutées"
+    "select_all": "Tout sélectionner",
+    "deselect_all": "Tout désélectionner",
+    "add_selected": "Ajouter la sélection",
+    "none_selected": "Aucune vidéo sélectionnée",
+    "added": "{n} vidéos ajoutées"
   },
   "settings": {
-    "group_interface": "Interface", "group_video": "Vidéo", "group_audio": "Audio", "group_subs": "Sous-titres", "group_network": "Réseau",
-    "language": "Langue", "output_dir": "Dossier de téléchargement", "max_concurrent": "Téléchargements simultanés",
-    "video_quality": "Qualité par défaut", "audio_quality": "Qualité par défaut", "audio_format": "Format", "audio_lang": "Langue préférée",
-    "sub_lang": "Langue préférée", "sub_auto": "Inclure les générés automatiquement", "embed_subs": "Intégrer les sous-titres",
-    "rate_limit": "Limite de débit", "rate_limit_hint": "Vide = illimité", "cookies": "Fichier cookies", "proxy": "Proxy",
-    "best": "Meilleur disponible", "save": "Enregistrer", "reset": "Réinitialiser",
-    "saved": "Paramètres enregistrés", "reset_confirm": "Réinitialiser tous les paramètres ?", "reset_done": "Paramètres réinitialisés"
+    "group_interface": "Interface",
+    "group_video": "Vidéo",
+    "group_audio": "Audio",
+    "group_subs": "Sous-titres",
+    "group_network": "Réseau",
+    "language": "Langue",
+    "output_dir": "Dossier de téléchargement",
+    "max_concurrent": "Téléchargements simultanés",
+    "video_quality": "Qualité par défaut",
+    "audio_quality": "Qualité par défaut",
+    "audio_format": "Format",
+    "audio_lang": "Langue préférée",
+    "sub_lang": "Langue préférée",
+    "sub_auto": "Inclure les générés automatiquement",
+    "embed_subs": "Intégrer les sous-titres",
+    "rate_limit": "Limite de débit",
+    "rate_limit_hint": "Vide = illimité",
+    "cookies": "Fichier cookies",
+    "proxy": "Proxy",
+    "best": "Meilleur disponible",
+    "save": "Enregistrer",
+    "reset": "Réinitialiser",
+    "saved": "Paramètres enregistrés",
+    "reset_confirm": "Réinitialiser tous les paramètres ?",
+    "reset_done": "Paramètres réinitialisés"
   },
-  "common": { "cancel": "Annuler", "close": "Fermer", "ok": "OK" }
+  "common": {
+    "cancel": "Annuler",
+    "close": "Fermer",
+    "ok": "OK"
+  },
+  "ws": {
+    "connected": "Connecté",
+    "reconnecting": "Reconnexion…",
+    "disconnected": "Déconnecté",
+    "connecting": "Connexion…"
+  },
+  "errors": {
+    "unknown": "Une erreur inconnue est survenue",
+    "forbidden": "Accès refusé — la vidéo peut nécessiter une connexion",
+    "rate_limit": "Trop de requêtes — patientez un moment",
+    "private": "Cette vidéo est privée",
+    "unavailable": "Vidéo indisponible ou supprimée",
+    "unsupported": "Site non supporté ou URL invalide",
+    "age_restricted": "Contenu pour adultes — un fichier cookie peut être requis",
+    "network": "Erreur réseau — vérifiez votre connexion",
+    "not_found": "Page introuvable — l'URL est peut-être incorrecte ou le contenu supprimé",
+    "members_only": "Contenu réservé aux membres — abonnement ou connexion requis"
+  }
 }

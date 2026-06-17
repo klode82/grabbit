@@ -1,4 +1,5 @@
 from pathlib import Path
+import asyncio
 
 from fastapi import FastAPI
 from fastapi.responses import FileResponse
@@ -39,5 +40,12 @@ def create_app() -> FastAPI:
     # API routes
     from app.api.routes import router as api_router
     app.include_router(api_router, prefix="/api")
+
+    @app.on_event("startup")
+    async def _capture_event_loop() -> None:
+        """Store the running event loop so background download threads can
+        schedule WebSocket broadcasts on it via run_coroutine_threadsafe."""
+        import app.api.routes as routes_module
+        routes_module._event_loop = asyncio.get_running_loop()
 
     return app

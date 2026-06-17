@@ -12,7 +12,9 @@
     "placeholder": "Paste URL here (YouTube, Vimeo, TikTok, SoundCloud…)",
     "hint": "Supports 1000+ sites via yt-dlp.",
     "analyze": "Analyze",
-    "add_queue": "Add to queue"
+    "add_queue": "Add to queue",
+    "drop_here": "Drop to analyze",
+    "auto_pasted": "URL pasted from clipboard"
   },
   "analyze": {
     "loading": "Analyzing URL…",
@@ -91,5 +93,23 @@
     "cancel": "Cancel",
     "close": "Close",
     "ok": "OK"
+  },
+  "ws": {
+    "connected": "Connected",
+    "reconnecting": "Reconnecting…",
+    "disconnected": "Disconnected",
+    "connecting": "Connecting…"
+  },
+  "errors": {
+    "unknown": "An unknown error occurred",
+    "forbidden": "Access denied — the video may require a login or cookie",
+    "rate_limit": "Too many requests — please wait a moment and try again",
+    "private": "This video is private",
+    "unavailable": "Video unavailable or has been removed",
+    "unsupported": "Unsupported site or invalid URL",
+    "age_restricted": "Age-restricted content — a cookie file may be required",
+    "network": "Network error — check your connection and try again",
+    "not_found": "Page not found — the URL may be incorrect or the content has been removed",
+    "members_only": "Members-only content — requires a subscription or login"
   }
 }

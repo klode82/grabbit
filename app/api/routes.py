@@ -17,6 +17,11 @@ _wrapper = YTDLPWrapper()
 # Active WebSocket connections
 _ws_clients: list[WebSocket] = []
 
+# The asyncio event loop running in the main thread.
+# Set once at FastAPI startup (see server.py) so background download
+# threads can schedule WebSocket broadcasts on it via run_coroutine_threadsafe.
+_event_loop: asyncio.AbstractEventLoop | None = None
+
 
 # ─────────────────────────────────────────────────────────────────────────────
 # WebSocket — live updates
@@ -49,17 +54,17 @@ async def _broadcast(payload: dict) -> None:
 
 
 def _queue_event_handler(payload: dict) -> None:
-    """Called from download threads — schedules a broadcast on the event loop."""
-    loop: asyncio.AbstractEventLoop | None = None
-    try:
-        loop = asyncio.get_running_loop()
-    except RuntimeError:
-        pass
-    if loop and loop.is_running():
-        asyncio.run_coroutine_threadsafe(_broadcast(payload), loop)
+    """Called from background download threads.
+
+    Uses the event loop cached at startup to schedule a WebSocket broadcast
+    on the main async thread via run_coroutine_threadsafe — the only safe
+    way to call async code from a non-async thread.
+    """
+    if _event_loop and _event_loop.is_running():
+        asyncio.run_coroutine_threadsafe(_broadcast(payload), _event_loop)
 
 
-# Register once
+# Register once at import time
 queue.add_listener(_queue_event_handler)
 
 
@@ -75,7 +80,7 @@ class AnalyzeRequest(BaseModel):
 async def analyze(req: AnalyzeRequest) -> Any:
     if not req.url.strip():
         raise HTTPException(status_code=422, detail="URL cannot be empty")
-    loop = asyncio.get_event_loop()
+    loop = asyncio.get_running_loop()
     try:
         result = await loop.run_in_executor(None, _wrapper.analyze, req.url.strip())
     except Exception as exc:
@@ -93,7 +98,7 @@ class PlaylistAnalyzeRequest(BaseModel):
 
 @router.post("/analyze/playlist-entry")
 async def analyze_playlist_entry(req: PlaylistAnalyzeRequest) -> Any:
-    loop = asyncio.get_event_loop()
+    loop = asyncio.get_running_loop()
     try:
         result = await loop.run_in_executor(
             None, _wrapper.analyze_playlist_entry, req.url.strip()

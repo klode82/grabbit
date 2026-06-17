@@ -1,9 +1,11 @@
 from __future__ import annotations
 
-import re
+from pathlib import Path
 from typing import Any, Callable, Optional
 
 import yt_dlp
+
+from app.core.logger import log
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -45,6 +47,7 @@ class YTDLPWrapper:
 
     def analyze(self, url: str) -> dict:
         """Extract full metadata for *url* without downloading anything."""
+        log.info("Analyzing URL: %s", url)
         opts: dict[str, Any] = {
             "quiet": True,
             "no_warnings": True,
@@ -52,10 +55,10 @@ class YTDLPWrapper:
         }
         with yt_dlp.YoutubeDL(opts) as ydl:
             info = ydl.extract_info(url, download=False)
-            # sanitize for JSON serialisation
             info = ydl.sanitize_info(info)
 
         entry_type = info.get("_type", "video")
+        log.info("Analysis complete — type=%s title=%s", entry_type, info.get("title"))
 
         if entry_type == "playlist":
             return self._parse_playlist(info)
@@ -217,11 +220,13 @@ class YTDLPWrapper:
                     "filename": d.get("filename", ""),
                 })
             elif status == "finished":
+                log.info("Download finished: %s", d.get("filename", ""))
                 progress_callback({
                     "status": "finished",
                     "filename": d.get("filename", ""),
                 })
             elif status == "error":
+                log.error("yt-dlp hook reported error for: %s", url)
                 progress_callback({"status": "error"})
 
         # Build format selector
@@ -236,7 +241,14 @@ class YTDLPWrapper:
             fmt_selector = "bestvideo+bestaudio/best"
 
         output_dir = options.get("output_dir", ".")
+
+        # Ensure the destination folder exists before yt-dlp tries to write
+        # to it — yt-dlp does not create intermediate directories on its own.
+        Path(output_dir).expanduser().mkdir(parents=True, exist_ok=True)
+
         tpl = options.get("output_template") or f"{output_dir}/%(title)s.%(ext)s"
+
+        log.info("Starting download: url=%s format=%s output=%s", url, fmt_selector, tpl)
 
         ydl_opts: dict[str, Any] = {
             "format": fmt_selector,
@@ -245,6 +257,9 @@ class YTDLPWrapper:
             "quiet": True,
             "no_warnings": True,
             "merge_output_format": "mp4",
+            # Always re-download if the file already exists rather than
+            # silently skipping it with no feedback to the user.
+            "overwrites": True,
         }
 
         sub_lang = options.get("subtitle_lang")

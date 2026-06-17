@@ -56,8 +56,32 @@ function toggleTheme() {
 
 /* ── Tab navigation ────────────────────────────────────────────────────────── */
 function switchTab(id) {
+  // CSS handles the fade transition via opacity — just toggle the active class.
   qsa('.nav-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === id));
   qsa('.tab-pane').forEach(p => p.classList.toggle('active', p.id === `tab-${id}`));
+}
+
+/* ── Error parser — maps raw yt-dlp messages to user-friendly strings ──────── */
+function parseYtdlpError(msg) {
+  if (!msg) return I18N.t('errors.unknown');
+  const m = msg.toLowerCase();
+  // HTTP status codes
+  if (m.includes('http error 403'))                                    return I18N.t('errors.forbidden');
+  if (m.includes('http error 429'))                                    return I18N.t('errors.rate_limit');
+  if (m.includes('http error 404') || m.includes('unable to download webpage')) return I18N.t('errors.not_found');
+  // Video state
+  if (m.includes('private video'))                                     return I18N.t('errors.private');
+  if (m.includes('video unavailable') || m.includes('not available')) return I18N.t('errors.unavailable');
+  if (m.includes('members-only') || m.includes('this video is only available')) return I18N.t('errors.members_only');
+  // Site support
+  if (m.includes('unable to extract') || m.includes('unsupported url')) return I18N.t('errors.unsupported');
+  // Age restriction
+  if (m.includes('confirm your age') || m.includes('age-restricted')) return I18N.t('errors.age_restricted');
+  // Network
+  if (m.includes('timed out') || m.includes('connection refused') || m.includes('network')) return I18N.t('errors.network');
+  // Fallback: show first line only, capped at 120 chars — avoids walls of raw text
+  const firstLine = msg.split('\n')[0].replace(/^ERROR:\s*/i, '').trim();
+  return firstLine.length > 120 ? firstLine.substring(0, 117) + '…' : firstLine;
 }
 
 /* ── URL input ─────────────────────────────────────────────────────────────── */
@@ -68,11 +92,11 @@ async function handleAnalyze() {
     return;
   }
   resetResult();
-  showLoading(true, I18N.t('analyze.loading'));
+  showSkeleton(true);
 
   try {
     const result = await API.analyze(url);
-    showLoading(false);
+    showSkeleton(false);
 
     if (result.type === 'playlist') {
       handlePlaylistResult(result);
@@ -80,8 +104,8 @@ async function handleAnalyze() {
       handleVideoResult(result);
     }
   } catch (err) {
-    showLoading(false);
-    toast(err.message, 'error');
+    showSkeleton(false);
+    toast(parseYtdlpError(err.message), 'error');
   }
 }
 
@@ -96,14 +120,9 @@ function resetResult() {
   qs('#playlist-analysis').classList.remove('visible');
 }
 
-/* ── Loading indicator ─────────────────────────────────────────────────────── */
-function showLoading(visible, label = '') {
-  const el = qs('#analyze-loading');
-  el.classList.toggle('visible', visible);
-  if (label) qs('#analyze-loading-label').textContent = label;
-  const fill = qs('#analyze-progress-fill');
-  fill.style.width = visible ? '40%' : '0%';
-  fill.classList.toggle('indeterminate', visible);
+/* ── Skeleton loader — replaces the old progress bar during analysis ───────── */
+function showSkeleton(visible) {
+  qs('#skeleton-card').classList.toggle('visible', visible);
   qs('#analyze-btn').disabled = visible;
 }
 
@@ -575,6 +594,19 @@ async function saveSettingsFromForm() {
 
 /* ── WebSocket events ──────────────────────────────────────────────────────── */
 function initWebSocket() {
+  // Update the connection indicator dot in the header
+  API.WS.on('connected', () => {
+    const dot = qs('#ws-dot');
+    dot.className = 'ws-dot connected';
+    qs('#ws-indicator').title = I18N.t('ws.connected');
+  });
+
+  API.WS.on('disconnected', () => {
+    const dot = qs('#ws-dot');
+    dot.className = 'ws-dot reconnecting';
+    qs('#ws-indicator').title = I18N.t('ws.reconnecting');
+  });
+
   API.WS.on('init', ({ items, stats }) => {
     renderQueue(items, stats);
   });
@@ -599,7 +631,9 @@ function initWebSocket() {
       toast(I18N.t('queue.done', { title: item.title }), 'success');
     }
     if (item.status === 'error') {
-      toast(I18N.t('queue.error', { title: item.title }), 'error');
+      // Parse the raw yt-dlp error into a readable message
+      const friendly = parseYtdlpError(item.error);
+      toast(`${item.title}: ${friendly}`, 'error');
     }
   });
 }
@@ -664,6 +698,58 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.addEventListener('keydown', e => {
       if ((e.ctrlKey || e.metaKey) && e.key === 'v' && document.activeElement.tagName !== 'INPUT') {
         qs('#url-input').focus();
+      }
+    });
+
+    // ── Drag & drop URL onto the window ────────────────────────────────────
+    // Show the overlay when something is dragged over the app window.
+    document.addEventListener('dragover', e => {
+      e.preventDefault();
+      qs('#drag-overlay').classList.add('active');
+    });
+
+    // Hide the overlay when the drag leaves the window entirely.
+    document.addEventListener('dragleave', e => {
+      if (!e.relatedTarget) qs('#drag-overlay').classList.remove('active');
+    });
+
+    // On drop: extract the URL, put it in the input, and start analysis.
+    document.addEventListener('drop', e => {
+      e.preventDefault();
+      qs('#drag-overlay').classList.remove('active');
+      const url = (e.dataTransfer.getData('text/uri-list') || e.dataTransfer.getData('text/plain') || '').trim();
+      if (url) {
+        switchTab('download');
+        qs('#url-input').value = url;
+        handleAnalyze();
+      }
+    });
+
+    // ── Auto-paste from clipboard on window focus ───────────────────────────
+    // When the app window regains visibility and the URL field is empty,
+    // check the clipboard for a URL and pre-fill it.
+    document.addEventListener('visibilitychange', async () => {
+      if (document.visibilityState !== 'visible') return;
+      if (qs('#url-input').value.trim()) return;
+
+      let text = '';
+
+      // Try pywebview Python bridge first — most reliable inside Qt WebEngine
+      // because the browser clipboard API requires explicit user permissions.
+      try {
+        if (window.pywebview?.api?.get_clipboard) {
+          text = await window.pywebview.api.get_clipboard();
+        }
+      } catch {}
+
+      // Fallback: standard browser Clipboard API (works on macOS / Windows)
+      if (!text) {
+        try { text = await navigator.clipboard.readText(); } catch {}
+      }
+
+      if (text && /^https?:\/\//i.test(text.trim())) {
+        qs('#url-input').value = text.trim();
+        toast(I18N.t('download.auto_pasted'), 'info', 2500);
       }
     });
 

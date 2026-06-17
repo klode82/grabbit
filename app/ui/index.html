@@ -28,6 +28,10 @@
       <span class="logo-text">GRABBIT</span>
     </div>
     <div class="header-right">
+      <!-- WebSocket connection status dot -->
+      <div class="ws-indicator" id="ws-indicator" data-i18n-title="ws.connecting">
+        <span class="ws-dot" id="ws-dot"></span>
+      </div>
       <button class="btn-icon" id="theme-toggle" data-i18n-title="header.dark_mode">
         <span id="theme-toggle-icon">☀️</span>
       </button>
@@ -73,14 +77,39 @@
         </p>
       </div>
 
-      <!-- Analysis loading -->
-      <div class="analyze-loading" id="analyze-loading">
-        <div class="analyze-loading-label">
-          <span id="analyze-loading-label" data-i18n="analyze.loading">Analyzing…</span>
-          <span class="muted small" id="analyze-progress-pct"></span>
+      <!-- Skeleton loader — shown while analyzing, shaped like the result card -->
+      <div class="skeleton-card" id="skeleton-card">
+        <div class="skeleton-header">
+          <div class="skel skel-thumb"></div>
+          <div class="skel-meta">
+            <div class="skel skel-title"></div>
+            <div class="skel skel-line"></div>
+            <div class="skel-badges">
+              <div class="skel skel-badge"></div>
+              <div class="skel skel-badge"></div>
+              <div class="skel skel-badge"></div>
+            </div>
+          </div>
         </div>
-        <div class="progress-bar-wrap">
-          <div class="progress-bar-fill indeterminate" id="analyze-progress-fill" style="width:40%"></div>
+        <div class="skeleton-body">
+          <div>
+            <div class="skel skel-section-title"></div>
+            <div class="skel-chips">
+              <div class="skel skel-chip" style="width:110px"></div>
+              <div class="skel skel-chip" style="width:130px"></div>
+              <div class="skel skel-chip" style="width:110px"></div>
+              <div class="skel skel-chip" style="width:90px"></div>
+              <div class="skel skel-chip" style="width:110px"></div>
+            </div>
+          </div>
+          <div>
+            <div class="skel skel-section-title"></div>
+            <div class="skel-chips">
+              <div class="skel skel-chip" style="width:120px"></div>
+              <div class="skel skel-chip" style="width:100px"></div>
+              <div class="skel skel-chip" style="width:80px"></div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -339,6 +368,16 @@
 
   <!-- ── Toast container ──────────────────────────────────────────────────── -->
   <div id="toast-container"></div>
+
+  <!-- ── Drag & drop overlay — shown when user drags a URL onto the window ── -->
+  <div class="drag-overlay" id="drag-overlay">
+    <div class="drag-overlay-inner">
+      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <path d="M12 3v12m0 0l-4-4m4 4l4-4M3 17v2a2 2 0 002 2h14a2 2 0 002-2v-2"/>
+      </svg>
+      <p data-i18n="download.drop_here">Drop to analyze</p>
+    </div>
+  </div>
 
 </div><!-- #app -->
 

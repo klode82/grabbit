@@ -84,6 +84,31 @@ def detect_linux_gui() -> str | None:
     return None
 
 
+class GrabbitAPI:
+    """Python functions exposed to the web UI via pywebview's JS bridge.
+
+    Methods here are callable from JavaScript as:
+        await window.pywebview.api.method_name(args)
+    """
+
+    def get_clipboard(self) -> str:
+        """Return the current clipboard text, or an empty string on failure.
+
+        Uses pyperclip for cross-platform support (xclip/xsel on Linux,
+        pbpaste on macOS, win32 on Windows).
+        """
+        try:
+            import pyperclip
+            return pyperclip.paste() or ""
+        except Exception:
+            return ""
+
+    def get_log_path(self) -> str:
+        """Return the absolute path to GRABBIT's log file."""
+        from app.core.logger import get_log_path
+        return get_log_path()
+
+
 def main() -> None:
     # Detect GUI backend before doing anything else so we can apply
     # the correct environment flags before Qt WebEngine initialises.
@@ -114,6 +139,8 @@ def main() -> None:
         min_size=(720, 540),
         resizable=True,
         text_select=False,
+        # Expose Python functions to JavaScript via window.pywebview.api
+        js_api=GrabbitAPI(),
     )
 
     # Pass the detected backend explicitly so pywebview skips failed attempts.

@@ -62,11 +62,13 @@ class SettingsManager:
             if k in _DEFAULTS:
                 self._data[k] = v
         self._save()
+        self._ensure_output_dir()
         return self.get_all()
 
     def reset(self) -> dict:
         self._data = dict(_DEFAULTS)
         self._save()
+        self._ensure_output_dir()
         return self.get_all()
 
     # ── I/O ──────────────────────────────────────────────────────────────────
@@ -81,6 +83,18 @@ class SettingsManager:
                         self._data[k] = v
             except (json.JSONDecodeError, OSError):
                 pass
+        # Ensure the download directory exists so yt-dlp never fails on a
+        # missing destination folder, even on a fresh install.
+        self._ensure_output_dir()
+
+    def _ensure_output_dir(self) -> None:
+        """Create the configured output directory if it does not exist."""
+        try:
+            Path(self._data.get("output_dir", ".")).expanduser().mkdir(
+                parents=True, exist_ok=True
+            )
+        except OSError:
+            pass
 
     def _save(self) -> None:
         try:
