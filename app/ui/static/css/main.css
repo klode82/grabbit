@@ -787,24 +787,43 @@ a:hover { text-decoration: underline; }
 
 .playlist-items {
   display: flex;
-  flex-direction: column;
+  flex-direction: column;   /* entries stack vertically */
   gap: 6px;
-  max-height: 320px;
-  overflow-y: auto;
   margin-top: 16px;
+  /* no max-height — height adapts to content */
 }
+
+/* ── Playlist entry: the accordion card ─────────────────────────────────── */
 .playlist-entry {
   display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 8px 10px;
-  border-radius: var(--r);
+  flex-direction: column;   /* header ABOVE body */
+  border-radius: var(--r-lg);
   border: 1px solid var(--border);
   background: var(--surface-el);
-  transition: border-color 0.12s;
+  overflow: hidden;
+  transition: border-color 0.15s;
+  /* height is always content-driven */
 }
 .playlist-entry:hover { border-color: var(--border-md); }
+.playlist-entry.needs-selection { border-color: var(--warn); }
+.playlist-entry.needs-selection .playlist-entry-title { color: var(--warn); }
+
+/* ── Accordion row (header) ─────────────────────────────────────────────── */
+.pl-accordion-header {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  min-height: 56px;        /* thumbnail height + padding */
+  cursor: pointer;
+  user-select: none;
+  flex-shrink: 0;
+}
+.pl-accordion-header:hover { background: var(--surface-hov); }
+
 .playlist-entry input[type="checkbox"] { flex-shrink: 0; accent-color: var(--accent); }
+
 .playlist-entry-thumb {
   width: 56px;
   height: 36px;
@@ -813,18 +832,53 @@ a:hover { text-decoration: underline; }
   background: var(--surface-hov);
   flex-shrink: 0;
 }
-.playlist-entry-info { flex: 1; min-width: 0; }
+.playlist-entry-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
 .playlist-entry-title {
   font-size: 13px;
+  font-weight: 500;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.playlist-entry-dur { font-size: 11px; color: var(--text-2); }
-.playlist-entry-status { font-size: 11px; }
+.playlist-entry-dur  { font-size: 11px; color: var(--text-2); }
+.playlist-entry-status { font-size: 11px; flex-shrink: 0; }
 .playlist-entry-status.loading { color: var(--text-3); }
 .playlist-entry-status.done    { color: var(--success); }
 .playlist-entry-status.error   { color: var(--danger); }
+
+.pl-accordion-arrow {
+  flex-shrink: 0;
+  color: var(--text-3);
+  font-size: 12px;
+  transition: transform 0.25s ease;
+}
+.pl-accordion-arrow.open { transform: rotate(180deg); }
+
+/* ── Accordion body (hidden → animated open) ─────────────────────────────── */
+.pl-accordion-body {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.28s ease;
+}
+.pl-accordion-body.open {
+  max-height: 2400px;   /* large enough for any entry content */
+  transition: max-height 0.35s ease;
+}
+.pl-body-inner {
+  padding: 14px;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+}
+
+/* Spacing inside the body card */
+.pl-body-inner .format-section { margin-bottom: 12px; }
+.pl-body-inner .format-section:last-child { margin-bottom: 0; }
 
 /* ── Scrollbar ───────────────────────────────────────────────────────────── */
 ::-webkit-scrollbar { width: 5px; height: 5px; }
@@ -980,6 +1034,65 @@ a:hover { text-decoration: underline; }
 .toggle-sm .toggle-slider { width: 26px; height: 15px; border-radius: 8px; }
 .toggle-sm .toggle-slider::before { width: 11px; height: 11px; }
 .toggle-sm input:checked + .toggle-slider::before { transform: translateX(11px); }
+
+/* ── Playlist format bar ──────────────────────────────────────────────────── */
+.pl-format-bar {
+  background: var(--surface-el);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  padding: 10px 14px;
+  margin-bottom: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.pl-format-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.pl-quality-chips { display: flex; flex-wrap: wrap; gap: 4px; }
+.pl-quality-chips .format-chip {
+  padding: 2px 8px;
+  font-size: 11px;
+  min-width: unset;
+  height: 24px;
+}
+.pl-subs-lang-input {
+  background: var(--surface-hov);
+  border: 1px solid var(--border-md);
+  border-radius: var(--r);
+  color: var(--text);
+  font-size: 12px;
+  padding: 2px 6px;
+  width: 72px;
+  outline: none;
+}
+.pl-subs-lang-input:focus { border-color: var(--accent); }
+
+/* Per-video format badges inside each playlist entry after analysis */
+.pl-format-info {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+.pl-format-badge {
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: var(--surface-hov);
+  color: var(--text-2);
+  border: 1px solid var(--border);
+  white-space: nowrap;
+}
+.pl-format-badge.unavailable {
+  color: var(--danger);
+  border-color: var(--danger);
+  background: var(--danger-dim);
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -990,7 +1103,53 @@ a:hover { text-decoration: underline; }
   }
 }
 
-/* ── Queue controls bar ──────────────────────────────────────────────────── */
+/* ── Format group: label | chips (grid layout) ───────────────────────────── */
+/* The label sits in a fixed left column; chips wrap within the right column  */
+/* so wrapped rows align under the chips, not under the label.                */
+.format-group {
+  display: grid;
+  grid-template-columns: 36px 1fr;
+  align-items: start;
+  gap: 0 8px;
+  margin-bottom: 6px;
+}
+.format-group-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-3);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  padding-top: 5px;     /* optical alignment with chip text */
+  text-align: right;
+}
+.format-group-chips { display: flex; flex-wrap: wrap; gap: 4px; }
+
+/* ── Partial chip (orange) — format not available in all playlist videos ──── */
+.format-chip.partial {
+  border-color: var(--warn);
+  color: var(--warn);
+}
+.format-chip.partial:hover { background: var(--warn-dim); }
+.format-chip.partial.selected {
+  background: var(--warn-dim);
+  border-color: var(--warn);
+  color: var(--warn);
+  font-weight: 600;
+}
+.chip-count {
+  font-size: 9px;
+  opacity: 0.75;
+  margin-left: 3px;
+}
+
+/* ── Global playlist format bar chip areas ───────────────────────────────── */
+.pl-chip-area {
+  padding-left: 44px;  /* indent to align under the toggle+title */
+  margin-top: 4px;
+  margin-bottom: 4px;
+}
+.pl-chip-area .format-grid { display: flex; flex-wrap: wrap; gap: 4px; }
+.pl-chip-area .format-chip { font-size: 11px; height: 24px; padding: 0 8px; min-width: unset; }
 .queue-controls {
   display: flex;
   align-items: center;

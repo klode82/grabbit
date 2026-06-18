@@ -106,6 +106,34 @@ def _find_output_file(output_dir: str, merge_ext: str = "mp4") -> str:
     return ""
 
 
+def _cleanup_partial_files(output_dir: str) -> None:
+    """Remove temp files left by an interrupted yt-dlp download.
+
+    Covers:
+    - ``*.part``  — partially downloaded stream
+    - ``*.ytdl``  — yt-dlp download descriptor
+    - ``*.f<N>.*`` — completed individual stream (e.g. ``title.f137.mp4``,
+                     ``title.f140.m4a``) that would have been merged had the
+                     download not been interrupted
+    """
+    import time, re
+    _fmt_re = re.compile(r'\.f\d+\.')   # matches .f137. .f140. etc.
+    try:
+        d = Path(output_dir).expanduser()
+        cutoff = time.time() - 300
+        removed: list[str] = []
+        for f in d.iterdir():
+            if not f.is_file() or f.stat().st_mtime < cutoff:
+                continue
+            if f.suffix in (".part", ".ytdl") or _fmt_re.search(f.name):
+                f.unlink(missing_ok=True)
+                removed.append(f.name)
+        if removed:
+            log.info("Cleaned up partial files: %s", removed)
+    except Exception as exc:
+        log.warning("Partial file cleanup failed for '%s': %s", output_dir, exc)
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # Main wrapper
 # ─────────────────────────────────────────────────────────────────────────────
@@ -123,9 +151,12 @@ class YTDLPWrapper:
         """Extract full metadata for *url* without downloading anything."""
         log.info("Analyzing URL: %s", url)
         opts: dict[str, Any] = {
-            "quiet": True,
-            "no_warnings": True,
-            "extract_flat": "discard_in_playlist",
+            "quiet":             True,
+            "no_warnings":       True,
+            "extract_flat":      "discard_in_playlist",
+            # Skip unavailable / private / geo-blocked entries in playlists
+            # instead of raising an error for the whole playlist.
+            "ignoreerrors":      True,
         }
         with yt_dlp.YoutubeDL(opts) as ydl:
             info = ydl.extract_info(url, download=False)
@@ -273,13 +304,17 @@ class YTDLPWrapper:
         (a BaseException subclass) so the caller can handle pause/cancel cleanly.
         """
 
+        # Bail out immediately if already interrupted before the download starts.
+        # This avoids wasting time on the metadata peek for cancelled items.
+        if stop_event and stop_event.is_set():
+            raise _DownloadInterrupted("Download cancelled before start")
+
         def _hook(d: dict) -> None:
             # Check for pause/cancel between every progress update.
             # _DownloadInterrupted is a BaseException — it passes through
             # yt-dlp's own try/except Exception handlers.
             if stop_event and stop_event.is_set():
                 raise _DownloadInterrupted("Download interrupted by user")
-
             if not progress_callback:
                 return
             status = d.get("status")

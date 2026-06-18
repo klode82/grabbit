@@ -29,7 +29,8 @@
     "none": "No formats available",
     "container": "Container",
     "video_count": "formats",
-    "audio_count": "tracks"
+    "audio_count": "tracks",
+    "best": "Best"
   },
   "subtitles": {
     "none": "No subtitles available",
@@ -75,7 +76,9 @@
     "deselect_all": "Deselect all",
     "add_selected": "Add selected to queue",
     "none_selected": "No videos selected",
-    "added": "{n} videos added to queue"
+    "added": "{n} videos added to queue",
+    "unavailable": "Unavailable",
+    "needs_selection": "{n} videos need format selection"
   },
   "settings": {
     "group_interface": "Interface",

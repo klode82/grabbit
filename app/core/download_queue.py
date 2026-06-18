@@ -215,16 +215,25 @@ class DownloadQueue:
     def _schedule(self) -> None:
         if self.is_paused:
             return
+        to_start: List[DownloadItem] = []
         with self._lock:
             active = sum(1 for i in self._items.values()
                          if i.status == Status.DOWNLOADING)
             slots = self.max_concurrent - active
             if slots <= 0:
                 return
-            pending = [self._items[i] for i in self._order
-                       if i in self._items
-                       and self._items[i].status == Status.PENDING]
-        for item in pending[:slots]:
+            for item_id in self._order:
+                if slots <= 0:
+                    break
+                item = self._items.get(item_id)
+                if item and item.status == Status.PENDING:
+                    # Mark DOWNLOADING inside the lock — prevents two concurrent
+                    # _schedule() calls from both picking up the same item.
+                    item.status = Status.DOWNLOADING
+                    to_start.append(item)
+                    slots -= 1
+
+        for item in to_start:
             t = threading.Thread(
                 target=self._run, args=(item,),
                 daemon=True, name=f"dl-{item.id[:8]}"
@@ -236,8 +245,12 @@ class DownloadQueue:
 
         wrapper = YTDLPWrapper()
 
+        # _schedule() already set status=DOWNLOADING inside the lock.
+        # If status changed between then and now (cancel/remove), bail out.
         with self._lock:
-            item.status = Status.DOWNLOADING
+            if item.status != Status.DOWNLOADING:
+                return
+
         self._emit_item("status", item)
 
         def on_progress(data: dict) -> None:
@@ -269,8 +282,10 @@ class DownloadQueue:
             self._emit_item("status", item)
         except _DownloadInterrupted:
             # Download was interrupted by pause() or cancel().
-            # The status was already set by those methods — nothing to do here.
-            pass
+            # The status was already set by those methods.
+            # Clean up any .part / .ytdl temp files left in the output folder.
+            from app.core.ytdlp_wrapper import _cleanup_partial_files
+            _cleanup_partial_files(item.options.get("output_dir", "."))
         except Exception as exc:
             with self._lock:
                 if item.status not in (Status.PAUSED, Status.CANCELLED):

@@ -29,7 +29,8 @@
     "none": "Aucun format disponible",
     "container": "Conteneur",
     "video_count": "formats",
-    "audio_count": "pistes"
+    "audio_count": "pistes",
+    "best": "Meilleur"
   },
   "subtitles": {
     "none": "Aucun sous-titre",
@@ -75,7 +76,9 @@
     "deselect_all": "Tout désélectionner",
     "add_selected": "Ajouter la sélection",
     "none_selected": "Aucune vidéo sélectionnée",
-    "added": "{n} vidéos ajoutées"
+    "added": "{n} vidéos ajoutées",
+    "unavailable": "Indisponible",
+    "needs_selection": "{n} vidéos sans sélection de format"
   },
   "settings": {
     "group_interface": "Interface",

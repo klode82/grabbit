@@ -114,6 +114,43 @@
         <div class="progress-bar-wrap" style="margin-bottom:14px">
           <div class="progress-bar-fill" id="playlist-progress-fill" style="width:0%"></div>
         </div>
+
+        <!-- Global format settings for all videos in the playlist -->
+        <div class="pl-format-bar" id="pl-format-bar">
+          <!-- Video toggle + chips -->
+          <div class="pl-format-row">
+            <label class="toggle toggle-sm">
+              <input type="checkbox" id="pl-video-toggle" checked>
+              <span class="toggle-slider"></span>
+            </label>
+            <span class="format-section-title" data-i18n="formats.video">Video</span>
+          </div>
+          <div class="pl-chip-area" id="pl-video-chip-area">
+            <div class="format-grid" id="pl-video-chips"></div>
+          </div>
+          <!-- Audio toggle + chips -->
+          <div class="pl-format-row">
+            <label class="toggle toggle-sm">
+              <input type="checkbox" id="pl-audio-toggle" checked>
+              <span class="toggle-slider"></span>
+            </label>
+            <span class="format-section-title" data-i18n="formats.audio">Audio</span>
+          </div>
+          <div class="pl-chip-area" id="pl-audio-chip-area">
+            <div class="format-grid" id="pl-audio-chips"></div>
+          </div>
+          <!-- Subtitles toggle + lang input -->
+          <div class="pl-format-row">
+            <label class="toggle toggle-sm">
+              <input type="checkbox" id="pl-subs-toggle">
+              <span class="toggle-slider"></span>
+            </label>
+            <span class="format-section-title" data-i18n="formats.subtitles">Subtitles</span>
+            <input class="pl-subs-lang-input" id="pl-subs-lang" type="text"
+                   placeholder="en, it…" maxlength="10" style="display:none">
+          </div>
+        </div>
+
         <div style="display:flex;gap:8px;margin-bottom:10px">
           <button class="btn btn-ghost small" id="playlist-select-all" data-i18n="playlist.select_all">Select all</button>
           <button class="btn btn-ghost small" id="playlist-deselect-all" data-i18n="playlist.deselect_all">Deselect all</button>
