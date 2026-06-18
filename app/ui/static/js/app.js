@@ -881,6 +881,7 @@ function selectPlVideoFormat(key) {
     State.plEntrySelections[eid].video = fmt.byEntry[eid] || null;
     // Sync chip highlight inside open accordion
     _syncEntryVideoChips(eid, State.plEntrySelections[eid].video);
+    updateEntryHeaderBadges(eid);
     updateEntryOrangeState(eid);
   }
   updateAddQueueBtn();
@@ -897,6 +898,7 @@ function selectPlAudioFormat(key) {
     if (!State.plEntrySelections[eid]) State.plEntrySelections[eid] = {};
     State.plEntrySelections[eid].audio = fmt.byEntry[eid] || null;
     _syncEntryAudioChips(eid, State.plEntrySelections[eid].audio);
+    updateEntryHeaderBadges(eid);
     updateEntryOrangeState(eid);
   }
   updateAddQueueBtn();
@@ -943,17 +945,37 @@ function initPlaylistFormatBar() {
 
   if (vt) { vt.checked = State.plVideoEnabled; vt.onchange = e => {
     State.plVideoEnabled = e.target.checked;
-    qs('#pl-video-chip-area').style.opacity = e.target.checked ? '' : '0.35';
+    qs('#pl-video-chip-area').style.opacity       = e.target.checked ? '' : '0.35';
     qs('#pl-video-chip-area').style.pointerEvents = e.target.checked ? '' : 'none';
-    State.playlistEntries.forEach(e2 => updateEntryOrangeState(e2._stub?.id || e2.id));
+    if (!e.target.checked) {
+      // Clear video selection from every entry
+      qsa('#pl-video-chips .format-chip').forEach(c => c.classList.remove('selected'));
+      State.playlistEntries.forEach(entry => {
+        const eid = entry._stub?.id || entry.id;
+        if (State.plEntrySelections[eid]) State.plEntrySelections[eid].video = null;
+        _syncEntryVideoChips(eid, null);
+        updateEntryHeaderBadges(eid);
+        updateEntryOrangeState(eid);
+      });
+    }
     updateAddQueueBtn();
   }; }
 
   if (at) { at.checked = State.plAudioEnabled; at.onchange = e => {
     State.plAudioEnabled = e.target.checked;
-    qs('#pl-audio-chip-area').style.opacity = e.target.checked ? '' : '0.35';
+    qs('#pl-audio-chip-area').style.opacity       = e.target.checked ? '' : '0.35';
     qs('#pl-audio-chip-area').style.pointerEvents = e.target.checked ? '' : 'none';
-    State.playlistEntries.forEach(e2 => updateEntryOrangeState(e2._stub?.id || e2.id));
+    if (!e.target.checked) {
+      // Clear audio selection from every entry
+      qsa('#pl-audio-chips .format-chip').forEach(c => c.classList.remove('selected'));
+      State.playlistEntries.forEach(entry => {
+        const eid = entry._stub?.id || entry.id;
+        if (State.plEntrySelections[eid]) State.plEntrySelections[eid].audio = null;
+        _syncEntryAudioChips(eid, null);
+        updateEntryHeaderBadges(eid);
+        updateEntryOrangeState(eid);
+      });
+    }
     updateAddQueueBtn();
   }; }
 
@@ -1029,8 +1051,10 @@ function buildPlaylistAccordion(entry) {
            onerror="this.style.display='none'">
       <div class="playlist-entry-info">
         <div class="playlist-entry-title">${entry.title || eid}</div>
-        <div class="playlist-entry-dur">${entry.duration ? fmtDuration(entry.duration) : ''}</div>
-        <div class="pl-format-info" id="pf-${eid}"></div>
+        <div class="pl-entry-sub" id="pm-${eid}">
+          ${entry.duration ? fmtDuration(entry.duration) : ''}
+        </div>
+        <div class="pl-selected-formats" id="pf-${eid}"></div>
       </div>
       <span class="playlist-entry-status loading" id="ps-${eid}">…</span>
       <span class="pl-accordion-arrow" id="pa-${eid}">▾</span>
@@ -1065,33 +1089,30 @@ function updatePlaylistEntryAnalyzed(eid, full) {
   const st = qs(`#ps-${eid}`);
   if (st) { st.textContent = '✓'; st.className = 'playlist-entry-status done'; }
 
-  // Update title from full analysis (flat extraction often omits it)
   if (full.title) {
     const titleEl = el.querySelector('.playlist-entry-title');
     if (titleEl) titleEl.textContent = full.title;
   }
-
   if (full.thumbnail) {
     const img = el.querySelector('.playlist-entry-thumb');
-    if (img) img.src = full.thumbnail;
-  }
-  if (full.duration) {
-    const dur = el.querySelector('.playlist-entry-dur');
-    if (dur) dur.textContent = fmtDuration(full.duration);
+    if (img) {
+      img.style.display = '';   // undo onerror display:none
+      img.src = full.thumbnail;
+    }
   }
 
-  // Format summary badges
-  const badges = qs(`#pf-${eid}`);
-  if (badges) {
+  // Sub-meta: duration · extractor · uploader
+  const sub = qs(`#pm-${eid}`);
+  if (sub) {
     const parts = [];
-    const bv = full.best_video, ba = full.best_audio;
-    if (bv) parts.push(`<span class="pl-format-badge">▶ ${bv.quality_label}${bv.codec ? ' · ' + bv.codec : ''}</span>`);
-    if (ba) parts.push(`<span class="pl-format-badge">♪ ${ba.quality_label}${ba.codec ? ' · ' + ba.codec : ''}</span>`);
-    if (full.has_subtitles) parts.push(`<span class="pl-format-badge">SUB</span>`);
-    badges.innerHTML = parts.join('');
+    if (full.duration)  parts.push(fmtDuration(full.duration));
+    if (full.extractor) parts.push(full.extractor);
+    if (full.uploader)  parts.push(full.uploader);
+    sub.textContent = parts.join(' · ');
   }
 
-  // Mark orange (no format selected yet)
+  // Selected-format badges: start empty — updated when user picks a format
+  updateEntryHeaderBadges(eid);
   updateEntryOrangeState(eid);
 }
 
@@ -1107,7 +1128,7 @@ function updatePlaylistEntryError(eid) {
   State.playlistSelected.delete(eid);
 }
 
-/* ── Entry accordion body: full single-video result card ───────────────────── */
+/* ── Entry accordion body: format selection only (no header duplication) ───── */
 function renderEntryAccordionBody(eid, entry) {
   const outer = qs(`#pb-${eid}`);
   if (!outer) return;
@@ -1115,35 +1136,7 @@ function renderEntryAccordionBody(eid, entry) {
   if (!body) return;
   const sel = State.plEntrySelections[eid] || {};
 
-  // Thumbnail
-  const thumbHTML = entry.thumbnail
-    ? `<img class="result-thumb" src="${entry.thumbnail}" alt="" onerror="this.style.display='none'">`
-    : `<div class="result-thumb-placeholder"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg></div>`;
-
-  const bv = entry.best_video, ba = entry.best_audio;
-
   body.innerHTML = `
-    <div class="result-header" style="margin-bottom:14px">
-      ${thumbHTML}
-      <div class="result-meta">
-        <div class="result-title">${entry.title || ''}</div>
-        <div class="result-sub">
-          <span>
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
-            ${fmtDuration(entry.duration)}
-          </span>
-          ${entry.extractor ? `<span>${entry.extractor}</span>` : ''}
-          ${entry.uploader  ? `<span>${entry.uploader}</span>`  : ''}
-        </div>
-        <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">
-          ${bv ? `<span class="badge badge-quality">${bv.quality_label}</span>` : ''}
-          ${ba ? `<span class="badge badge-audio">${ba.quality_label}</span>` : ''}
-          ${entry.has_subtitles
-            ? `<span class="badge badge-subs" style="background:rgba(52,211,153,.15);color:#34d399">${I18N.t('analyze.subs_yes')}</span>` : ''}
-        </div>
-      </div>
-    </div>
-
     <div class="result-formats">
 
       <!-- Video -->
@@ -1191,21 +1184,48 @@ function renderEntryAccordionBody(eid, entry) {
 
     </div>`;
 
-  // Render chips
   renderEntryFormatChips('video', eid, entry.video_formats || [], sel.video);
   renderEntryFormatChips('audio', eid, entry.audio_formats || [], sel.audio);
   renderEntrySubList(eid, entry.subtitles || {}, sel.subs);
-
-  // Restore size hints if format already selected
   _restoreEntryHint('v', eid, entry.video_formats, sel.video);
   _restoreEntryHint('a', eid, entry.audio_formats, sel.audio);
 }
+
 
 function _restoreEntryHint(prefix, eid, formats, selectedId) {
   if (!selectedId || !formats) return;
   const fmt  = formats.find(f => f.format_id === selectedId);
   const hint = qs(`#peh-${prefix}-${eid}`);
   if (hint && fmt?.filesize_human) hint.textContent = `~${fmt.filesize_human}`;
+}
+
+/* Update the selected-format badges in the accordion header */
+function updateEntryHeaderBadges(eid) {
+  const el = qs(`#pf-${eid}`);
+  if (!el) return;
+  const sel   = State.plEntrySelections[eid] || {};
+  const entry = State.playlistEntries.find(e => (e._stub?.id || e.id) === eid);
+  if (!entry) { el.innerHTML = ''; return; }
+
+  const parts = [];
+  if (State.plVideoEnabled && sel.video) {
+    const fmt = entry.video_formats?.find(f => f.format_id === sel.video);
+    if (fmt) {
+      const lbl = [fmt.quality_label, fmt.codec].filter(Boolean).join(' · ');
+      parts.push(`<span class="pl-format-badge">▶ ${lbl}</span>`);
+    }
+  }
+  if (State.plAudioEnabled && sel.audio) {
+    const fmt = entry.audio_formats?.find(f => f.format_id === sel.audio);
+    if (fmt) {
+      const lbl = [fmt.quality_label, fmt.codec].filter(Boolean).join(' · ');
+      parts.push(`<span class="pl-format-badge">♪ ${lbl}</span>`);
+    }
+  }
+  if (sel.subsEnabled && sel.subs) {
+    parts.push(`<span class="pl-format-badge">SUB ${sel.subs.lang}</span>`);
+  }
+  el.innerHTML = parts.join('');
 }
 
 /* ── Entry subtitle list ───────────────────────────────────────────────────── */
@@ -1253,6 +1273,7 @@ function selectEntrySubtitle(eid, lang, auto) {
     const active = lang ? (el.dataset.lang === lang) : (el.dataset.lang === '__none__');
     el.classList.toggle('selected', active);
   });
+  updateEntryHeaderBadges(eid);
 }
 
 function renderEntryFormatChips(type, eid, formats, selectedId) {
@@ -1320,10 +1341,10 @@ function selectEntryFormat(eid, type, formatId, filesizeHuman) {
   qsa(`#pef-${prefix}-${eid} .format-chip`).forEach(c =>
     c.classList.toggle('selected', c.dataset.formatId === formatId));
 
-  // Update size hint
   const hint = qs(`#peh-${prefix}-${eid}`);
   if (hint) hint.textContent = filesizeHuman ? `~${filesizeHuman}` : '';
 
+  updateEntryHeaderBadges(eid);
   updateEntryOrangeState(eid);
   updateAddQueueBtn();
 }

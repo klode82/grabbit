@@ -815,7 +815,7 @@ a:hover { text-decoration: underline; }
   align-items: center;
   gap: 10px;
   padding: 10px 12px;
-  min-height: 56px;        /* thumbnail height + padding */
+  min-height: 72px;        /* thumbnail height + padding */
   cursor: pointer;
   user-select: none;
   flex-shrink: 0;
@@ -825,8 +825,8 @@ a:hover { text-decoration: underline; }
 .playlist-entry input[type="checkbox"] { flex-shrink: 0; accent-color: var(--accent); }
 
 .playlist-entry-thumb {
-  width: 56px;
-  height: 36px;
+  width: 88px;
+  height: 56px;
   object-fit: cover;
   border-radius: 4px;
   background: var(--surface-hov);
@@ -847,6 +847,21 @@ a:hover { text-decoration: underline; }
   text-overflow: ellipsis;
 }
 .playlist-entry-dur  { font-size: 11px; color: var(--text-2); }
+/* Sub-meta row: duration · extractor · uploader */
+.pl-entry-sub {
+  font-size: 11px;
+  color: var(--text-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* Selected-format badges (shown after user picks a format) */
+.pl-selected-formats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 4px;
+}
 .playlist-entry-status { font-size: 11px; flex-shrink: 0; }
 .playlist-entry-status.loading { color: var(--text-3); }
 .playlist-entry-status.done    { color: var(--success); }
