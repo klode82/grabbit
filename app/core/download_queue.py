@@ -182,14 +182,16 @@ class DownloadQueue:
         return len(ids)
 
     def clear_all(self) -> None:
-        """Cancel and remove every item."""
+        """Cancel and remove every item. Also resets the paused flag so new
+        downloads can start immediately after clearing."""
         with self._lock:
             for item in self._items.values():
                 item._stop_event.set()
                 item.status = Status.CANCELLED
             self._items.clear()
             self._order.clear()
-        self._emit_queue_update()
+        self.is_paused = False   # ← critical: Pause All + Clear All must not
+        self._emit_queue_update()  #   leave the queue stuck in paused state
 
     def get_all(self) -> List[dict]:
         with self._lock:
@@ -298,7 +300,14 @@ class DownloadQueue:
     # ── Event helpers ──────────────────────────────────────────────────────────
 
     def _emit_item(self, event: str, item: DownloadItem) -> None:
-        """Broadcast an event about a single item."""
+        """Broadcast an event about a single item.
+
+        Skips silently if the item has already been removed from the queue
+        (e.g. by clear_all() while the download thread was still running).
+        """
+        with self._lock:
+            if item.id not in self._items:
+                return   # item removed — don't send a ghost update to the UI
         payload = {"event": event, "item": item.to_dict(), "stats": self.stats}
         for cb in self._listeners:
             try:

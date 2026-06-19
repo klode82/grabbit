@@ -426,12 +426,21 @@ class YTDLPWrapper:
 
         sub_lang = options.get("subtitle_lang")
         if sub_lang:
-            ydl_opts["writesubtitles"]    = True
-            ydl_opts["subtitleslangs"]    = [sub_lang]
+            ydl_opts["writesubtitles"]           = True
+            ydl_opts["subtitleslangs"]            = [sub_lang]
+            ydl_opts["sleep_interval_subtitles"]  = 1
             if options.get("subtitle_auto"):
                 ydl_opts["writeautomaticsub"] = True
             if options.get("embed_subs"):
                 ydl_opts["embedsubtitles"] = True
+            # Convert subtitle format via explicit post-processor (more reliable
+            # than the convertsubtitles param key which varies across yt-dlp versions)
+            sub_fmt = options.get("subtitle_format", "vtt")
+            if sub_fmt and sub_fmt != "vtt":
+                ydl_opts.setdefault("postprocessors", []).append({
+                    "key":    "FFmpegSubtitlesConvertor",
+                    "format": sub_fmt,
+                })
 
         if options.get("rate_limit"):
             ydl_opts["ratelimit"] = options["rate_limit"]

@@ -25,8 +25,8 @@ const State = {
   plAudioFormatMap:  {},
   plVideoEnabled:  true,
   plAudioEnabled:  true,
-  plSubsEnabled:   false,
-  plSubsLang:      '',
+  plSubsEnabled:      false,
+  plSubtitleFormatMap: {},   // { key → { lang, auto, count, total, hasEntry } }
 };
 
 /* ── Helpers ───────────────────────────────────────────────────────────────── */
@@ -132,8 +132,8 @@ function toast(msg, type = 'info', duration = 3500) {
 /* ── Theme ─────────────────────────────────────────────────────────────────── */
 function applyTheme(theme) {
   document.documentElement.setAttribute('data-theme', theme);
-  qs('#theme-toggle').setAttribute('data-i18n-title', theme === 'dark' ? 'header.light_mode' : 'header.dark_mode');
-  qs('#theme-toggle-icon').textContent = theme === 'dark' ? '☀️' : '🌙';
+  // Update theme chip selection in settings (if rendered)
+  setChipSel?.('theme-chip-row', theme, 'data-theme');
 }
 
 function toggleTheme() {
@@ -420,10 +420,12 @@ function selectVideoFormat(id) {
   qsa('.format-chip', qs('#video-formats')).forEach(c =>
     c.classList.toggle('selected', c.dataset.formatId === id)
   );
-  // Show estimated file size
   const fmt  = State.currentResult?.video_formats?.find(f => f.format_id === id);
   const hint = qs('#video-size-hint');
   if (hint) hint.textContent = fmt?.filesize_human ? `~${fmt.filesize_human}` : '';
+  // Update accordion header badge
+  updateFormatSectionBadge('video', fmt
+    ? [fmt.quality_label, fmt.codec].filter(Boolean).join(' · ') : null);
 }
 
 function renderAudioFormats(formats) {
@@ -464,6 +466,8 @@ function selectAudioFormat(id) {
   const fmt  = State.currentResult?.audio_formats?.find(f => f.format_id === id);
   const hint = qs('#audio-size-hint');
   if (hint) hint.textContent = fmt?.filesize_human ? `~${fmt.filesize_human}` : '';
+  updateFormatSectionBadge('audio', fmt
+    ? [fmt.quality_label, fmt.codec].filter(Boolean).join(' · ') : null);
 }
 
 /* ── Subtitle list ─────────────────────────────────────────────────────────── */
@@ -512,6 +516,7 @@ function selectSub(lang, auto) {
       : (el.dataset.lang === '__none__');
     el.classList.toggle('selected', active);
   });
+  updateFormatSectionBadge('subs', lang ? langName(lang) + (auto ? ' (auto)' : '') : null);
 }
 
 /* ── Add to queue ──────────────────────────────────────────────────────────── */
@@ -839,10 +844,90 @@ function computePlaylistFormats(entries) {
   State.plVideoFormatMap = videoMap;
   State.plAudioFormatMap = audioMap;
 
+  // ── Subtitles ─────────────────────────────────────────────────────────────
+  const subMap = {};
+  for (const entry of entries) {
+    const eid  = entry._stub?.id || entry.id;
+    const subs = entry.subtitles || {};
+    const addSub = (lang, auto) => {
+      const key = `${auto ? 'auto' : 'manual'}_${lang}`;
+      if (!subMap[key]) subMap[key] = { key, lang, auto, count: 0, total, hasEntry: {} };
+      if (!subMap[key].hasEntry[eid]) { subMap[key].hasEntry[eid] = true; subMap[key].count++; }
+    };
+    Object.keys(subs.manual    || {}).forEach(l => addSub(l, false));
+    Object.keys(subs.automatic || {}).forEach(l => addSub(l, true));
+  }
+  State.plSubtitleFormatMap = subMap;
+
   return {
     videoFormats: sortV(Object.values(videoMap)),
     audioFormats: sortA(Object.values(audioMap)),
   };
+}
+
+/* Update the badge in a single-video format section header */
+function updateFormatSectionBadge(type, label) {
+  const badge = qs(`#${type}-sel-badge`);
+  if (!badge) return;
+  badge.innerHTML = label
+    ? `<span class="format-chip selected" style="pointer-events:none;font-size:11px;height:22px">${label}</span>`
+    : '';
+}
+
+/* Attach accordion click to single-video format section headers */
+function initFormatSectionAccordions() {
+  ['video', 'audio', 'subs'].forEach(type => {
+    const header = qs(`#fsh-${type}`);
+    if (!header) return;
+    header.style.cursor = 'pointer';
+    header.addEventListener('click', e => {
+      if (e.target.closest('label')) return;
+      const body  = qs(`#fsb-${type}`);
+      const arrow = qs(`#fsa-${type}`);
+      if (!body) return;
+      const isOpen = body.style.display !== 'none';
+      body.style.display = isOpen ? 'none' : '';
+      if (arrow) arrow.classList.toggle('open', !isOpen);
+    });
+  });
+}
+
+/* Helper: ISO/BCP-47 code → localised language name via Intl.DisplayNames */
+function langName(code) {
+  try {
+    const dn = new Intl.DisplayNames([I18N.current() || 'en'], { type: 'language' });
+    return dn.of(code) || code;
+  } catch { return code; }
+}
+
+/* Filter subtitle items in a playlist per-entry accordion */
+function filterEntrySubItems(eid, query) {
+  const q = query.toLowerCase().trim();
+  qsa(`#pefs-${eid} .sub-item`).forEach(item => {
+    const lang = (item.dataset.lang || '').toLowerCase();
+    const name = langName(item.dataset.lang || '').toLowerCase();
+    item.style.display = (!q || lang.includes(q) || name.includes(q)) ? '' : 'none';
+  });
+}
+
+/* Filter .sub-item elements in #sub-list (single video) */
+function filterSingleVideoSubs(query) {
+  const q = query.toLowerCase().trim();
+  qsa('#sub-list .sub-item').forEach(item => {
+    const lang = (item.dataset.lang || '').toLowerCase();
+    const name = langName(item.dataset.lang || '').toLowerCase();
+    item.style.display = (!q || lang.includes(q) || name.includes(q)) ? '' : 'none';
+  });
+}
+
+/* Filter .format-chip elements in global playlist subtitle chip areas */
+function filterPlSubtitleChips(query) {
+  const q = query.toLowerCase().trim();
+  qsa('#pl-manual-subs-chips .format-chip, #pl-auto-subs-chips .format-chip').forEach(chip => {
+    const lang = (chip.dataset.lang || '').toLowerCase();
+    const name = langName(chip.dataset.lang || '').toLowerCase();
+    chip.style.display = (!q || lang.includes(q) || name.includes(q)) ? '' : 'none';
+  });
 }
 
 /* ── Global chip rendering ─────────────────────────────────────────────────── */
@@ -851,6 +936,35 @@ function renderPlaylistGlobalChips() {
 
   _renderGlobalChipGroup(qs('#pl-video-chips'), videoFormats, selectPlVideoFormat);
   _renderGlobalChipGroup(qs('#pl-audio-chips'), audioFormats, selectPlAudioFormat);
+
+  // Subtitle chips — split by manual / auto
+  const subMap  = State.plSubtitleFormatMap;
+  const manuals = Object.values(subMap).filter(f => !f.auto).sort((a,b) => b.count - a.count);
+  const autos   = Object.values(subMap).filter(f =>  f.auto).sort((a,b) => b.count - a.count);
+
+  _renderSubChipGroup(qs('#pl-manual-subs-chips'), manuals);
+  _renderSubChipGroup(qs('#pl-auto-subs-chips'),   autos);
+
+  const ms = qs('#pl-manual-subs-section');
+  const as = qs('#pl-auto-subs-section');
+  if (ms) ms.style.display = manuals.length ? '' : 'none';
+  if (as) as.style.display = autos.length   ? '' : 'none';
+}
+
+function _renderSubChipGroup(wrap, formats) {
+  if (!wrap) return;
+  wrap.innerHTML = '';
+  formats.forEach(fmt => {
+    const chip = document.createElement('button');
+    chip.className = `format-chip${fmt.count < fmt.total ? ' partial' : ''}`;
+    chip.dataset.formatKey = fmt.key;
+    chip.dataset.lang = fmt.lang;          // used by search filter
+    const badge = fmt.count < fmt.total
+      ? `<span class="chip-count">${fmt.count}/${fmt.total}</span>` : '';
+    chip.innerHTML = `${langName(fmt.lang)}${badge}`;
+    chip.onclick = () => selectPlSubtitle(fmt.key);
+    wrap.appendChild(chip);
+  });
 }
 
 function _renderGlobalChipGroup(wrap, formats, onSelect) {
@@ -874,6 +988,7 @@ function selectPlVideoFormat(key) {
   if (!fmt) return;
   qsa('#pl-video-chips .format-chip').forEach(c =>
     c.classList.toggle('selected', c.dataset.formatKey === key));
+  updateGlobalFormatBadge('video', fmt.label);
 
   for (const entry of State.playlistEntries) {
     const eid = entry._stub?.id || entry.id;
@@ -892,6 +1007,7 @@ function selectPlAudioFormat(key) {
   if (!fmt) return;
   qsa('#pl-audio-chips .format-chip').forEach(c =>
     c.classList.toggle('selected', c.dataset.formatKey === key));
+  updateGlobalFormatBadge('audio', fmt.label);
 
   for (const entry of State.playlistEntries) {
     const eid = entry._stub?.id || entry.id;
@@ -904,14 +1020,53 @@ function selectPlAudioFormat(key) {
   updateAddQueueBtn();
 }
 
+function selectPlSubtitle(key) {
+  const fmt = State.plSubtitleFormatMap[key];
+  if (!fmt) return;
+
+  qsa('#pl-manual-subs-chips .format-chip, #pl-auto-subs-chips .format-chip')
+    .forEach(c => c.classList.toggle('selected', c.dataset.formatKey === key));
+  updateGlobalFormatBadge('subs', langName(fmt.lang) + (fmt.auto ? ' (auto)' : ''));
+
+  for (const entry of State.playlistEntries) {
+    const eid = entry._stub?.id || entry.id;
+    if (!State.plEntrySelections[eid]) State.plEntrySelections[eid] = {};
+    if (fmt.hasEntry[eid]) {
+      State.plEntrySelections[eid].subs        = { lang: fmt.lang, auto: fmt.auto };
+      State.plEntrySelections[eid].subsEnabled = true;
+    } else {
+      State.plEntrySelections[eid].subs = null;
+    }
+    _syncEntrySubtitleSelection(eid, State.plEntrySelections[eid].subs);
+    updateEntryHeaderBadges(eid);
+    updateEntryOrangeState(eid);
+  }
+  updateAddQueueBtn();
+}
+
+function _syncEntrySubtitleSelection(eid, subs) {
+  if (!qs(`#pb-${eid}`)?.classList.contains('open')) return;
+  qsa(`#pef-s-${eid} .sub-item`).forEach(el => {
+    const active = subs
+      ? (el.dataset.lang === subs.lang)
+      : (el.dataset.lang === '__none__');
+    el.classList.toggle('selected', active);
+  });
+}
+
 /* ── Orange state & queue button ───────────────────────────────────────────── */
 function updateEntryOrangeState(eid) {
   const el = qs(`#pe-${eid}`);
   if (!el) return;
   const sel = State.plEntrySelections[eid] || {};
-  const needsVideo = State.plVideoEnabled && !sel.video;
-  const needsAudio = State.plAudioEnabled && !sel.audio;
-  el.classList.toggle('needs-selection', needsVideo || needsAudio);
+  // Per-entry toggle overrides global when explicitly set (false = user disabled it)
+  const videoOn = State.plVideoEnabled && (sel.videoEnabled !== false);
+  const audioOn = State.plAudioEnabled && (sel.audioEnabled !== false);
+  const subsOn  = State.plSubsEnabled  && (sel.subsEnabled  !== false);
+  const needsVideo = videoOn && !sel.video;
+  const needsAudio = audioOn && !sel.audio;
+  const needsSubs  = subsOn  && !sel.subs;
+  el.classList.toggle('needs-selection', needsVideo || needsAudio || needsSubs);
 }
 
 function countOrangeSelected() {
@@ -919,7 +1074,10 @@ function countOrangeSelected() {
     const eid = e._stub?.id || e.id;
     if (!State.playlistSelected.has(eid)) return false;
     const sel = State.plEntrySelections[eid] || {};
-    return (State.plVideoEnabled && !sel.video) || (State.plAudioEnabled && !sel.audio);
+    const videoOn = State.plVideoEnabled && (sel.videoEnabled !== false);
+    const audioOn = State.plAudioEnabled && (sel.audioEnabled !== false);
+    const subsOn  = State.plSubsEnabled  && (sel.subsEnabled  !== false);
+    return (videoOn && !sel.video) || (audioOn && !sel.audio) || (subsOn && !sel.subs);
   }).length;
 }
 
@@ -941,53 +1099,113 @@ function initPlaylistFormatBar() {
   const vt = qs('#pl-video-toggle');
   const at = qs('#pl-audio-toggle');
   const st = qs('#pl-subs-toggle');
-  const sl = qs('#pl-subs-lang');
 
+  // Accordion header click: open/close chip body (ignore toggle label clicks)
+  ['video', 'audio', 'subs'].forEach(type => {
+    const header = qs(`#pl-${type}-header`);
+    if (!header) return;
+    header.addEventListener('click', e => {
+      if (e.target.closest('label')) return;
+      const acc   = qs(`#pl-${type}-accordion`);
+      const body  = qs(`#pl-${type}-chip-area`);
+      const arrow = qs(`#pl-${type}-arrow`);
+      if (!body || acc?.classList.contains('disabled')) return;
+      const isOpen = body.style.display !== 'none';
+      body.style.display = isOpen ? 'none' : '';
+      if (arrow) arrow.classList.toggle('open', !isOpen);
+    });
+  });
+
+  // Video toggle
   if (vt) { vt.checked = State.plVideoEnabled; vt.onchange = e => {
     State.plVideoEnabled = e.target.checked;
-    qs('#pl-video-chip-area').style.opacity       = e.target.checked ? '' : '0.35';
-    qs('#pl-video-chip-area').style.pointerEvents = e.target.checked ? '' : 'none';
+    const acc = qs('#pl-video-accordion');
+    const body = qs('#pl-video-chip-area');
+    const arrow = qs('#pl-video-arrow');
     if (!e.target.checked) {
-      // Clear video selection from every entry
+      if (body)  body.style.display = 'none';
+      if (arrow) arrow.classList.remove('open');
+      acc?.classList.add('disabled');
       qsa('#pl-video-chips .format-chip').forEach(c => c.classList.remove('selected'));
+      updateGlobalFormatBadge('video', null);
       State.playlistEntries.forEach(entry => {
         const eid = entry._stub?.id || entry.id;
         if (State.plEntrySelections[eid]) State.plEntrySelections[eid].video = null;
         _syncEntryVideoChips(eid, null);
         updateEntryHeaderBadges(eid);
-        updateEntryOrangeState(eid);
       });
+    } else {
+      acc?.classList.remove('disabled');
     }
+    State.playlistEntries.forEach(entry =>
+      updateEntryOrangeState(entry._stub?.id || entry.id));
     updateAddQueueBtn();
   }; }
 
+  // Audio toggle
   if (at) { at.checked = State.plAudioEnabled; at.onchange = e => {
     State.plAudioEnabled = e.target.checked;
-    qs('#pl-audio-chip-area').style.opacity       = e.target.checked ? '' : '0.35';
-    qs('#pl-audio-chip-area').style.pointerEvents = e.target.checked ? '' : 'none';
+    const acc = qs('#pl-audio-accordion');
+    const body = qs('#pl-audio-chip-area');
+    const arrow = qs('#pl-audio-arrow');
     if (!e.target.checked) {
-      // Clear audio selection from every entry
+      if (body)  body.style.display = 'none';
+      if (arrow) arrow.classList.remove('open');
+      acc?.classList.add('disabled');
       qsa('#pl-audio-chips .format-chip').forEach(c => c.classList.remove('selected'));
+      updateGlobalFormatBadge('audio', null);
       State.playlistEntries.forEach(entry => {
         const eid = entry._stub?.id || entry.id;
         if (State.plEntrySelections[eid]) State.plEntrySelections[eid].audio = null;
         _syncEntryAudioChips(eid, null);
         updateEntryHeaderBadges(eid);
-        updateEntryOrangeState(eid);
       });
+    } else {
+      acc?.classList.remove('disabled');
     }
+    State.playlistEntries.forEach(entry =>
+      updateEntryOrangeState(entry._stub?.id || entry.id));
     updateAddQueueBtn();
   }; }
 
+  // Subtitles toggle
   if (st) { st.checked = State.plSubsEnabled; st.onchange = e => {
     State.plSubsEnabled = e.target.checked;
-    if (sl) sl.style.display = e.target.checked ? '' : 'none';
+    const acc = qs('#pl-subs-accordion');
+    const body = qs('#pl-subs-chip-area');
+    const arrow = qs('#pl-subs-arrow');
+    if (!e.target.checked) {
+      if (body)  body.style.display = 'none';
+      if (arrow) arrow.classList.remove('open');
+      acc?.classList.add('disabled');
+      qsa('#pl-manual-subs-chips .format-chip, #pl-auto-subs-chips .format-chip')
+        .forEach(c => c.classList.remove('selected'));
+      updateGlobalFormatBadge('subs', null);
+      State.playlistEntries.forEach(entry => {
+        const eid = entry._stub?.id || entry.id;
+        if (State.plEntrySelections[eid]) {
+          State.plEntrySelections[eid].subs = null;
+          State.plEntrySelections[eid].subsEnabled = false;
+        }
+        _syncEntrySubtitleSelection(eid, null);
+        updateEntryHeaderBadges(eid);
+      });
+    } else {
+      acc?.classList.remove('disabled');
+    }
+    State.playlistEntries.forEach(entry =>
+      updateEntryOrangeState(entry._stub?.id || entry.id));
+    updateAddQueueBtn();
   }; }
+}
 
-  if (sl) { sl.style.display = State.plSubsEnabled ? '' : 'none';
-    sl.value = State.plSubsLang;
-    sl.oninput = e => { State.plSubsLang = e.target.value.trim(); };
-  }
+/* Update the selection badge in the global accordion header */
+function updateGlobalFormatBadge(type, label) {
+  const badge = qs(`#pl-${type}-badge`);
+  if (!badge) return;
+  badge.innerHTML = label
+    ? `<span class="format-chip selected">${label}</span>`
+    : '';
 }
 
 /* ── Playlist flow ──────────────────────────────────────────────────────────── */
@@ -998,6 +1216,29 @@ async function handlePlaylistResult(playlist) {
   State.plEntrySelections = {};
   State.plVideoFormatMap  = {};
   State.plAudioFormatMap  = {};
+  State.plSubtitleFormatMap = {};
+
+  // Pre-load subtitle toggle from settings: if user has a default lang, enable subs
+  State.plSubsEnabled = !!State.settings.default_sub_lang;
+
+  // ── Reset global format bar DOM (chips, badges, accordions) ──────────────
+  qsa('#pl-video-chips .format-chip, #pl-audio-chips .format-chip,\
+       #pl-manual-subs-chips .format-chip, #pl-auto-subs-chips .format-chip')
+    .forEach(c => c.classList.remove('selected'));
+  ['video', 'audio', 'subs'].forEach(type => {
+    const badge = qs(`#pl-${type}-badge`);
+    if (badge) badge.innerHTML = '';
+    const chipArea = qs(`#pl-${type}-chip-area`);
+    const arrow    = qs(`#pl-${type}-arrow`);
+    const acc      = qs(`#pl-${type}-accordion`);
+    if (chipArea) chipArea.style.display = 'none';
+    if (arrow)    arrow.classList.remove('open');
+    if (acc)      acc.classList.remove('disabled');
+  });
+  // Restore disabled state for subs accordion if subs toggle is OFF
+  if (!State.plSubsEnabled) {
+    qs('#pl-subs-accordion')?.classList.add('disabled');
+  }
 
   const panel = qs('#playlist-analysis');
   panel.classList.add('visible');
@@ -1032,7 +1273,84 @@ async function handlePlaylistResult(playlist) {
   // After all entries analyzed → compute format maps and render global chips
   renderPlaylistGlobalChips();
   progressLabel.textContent = I18N.t('playlist.done', { n: done });
+
+  // Auto-select video/audio/subtitle from settings defaults
+  _autoSelectVideoChip();
+  _autoSelectAudioChip();
+
+  // Auto-select subtitle from settings default_sub_lang if available in this playlist
+  const defaultLang = State.settings.default_sub_lang;
+  if (defaultLang && State.plSubsEnabled) {
+    const key = State.plSubtitleFormatMap[`manual_${defaultLang}`]
+      ? `manual_${defaultLang}`
+      : State.plSubtitleFormatMap[`auto_${defaultLang}`]
+      ? `auto_${defaultLang}` : null;
+    if (key) {
+      selectPlSubtitle(key);
+      const body  = qs('#pl-subs-chip-area');
+      const arrow = qs('#pl-subs-arrow');
+      if (body)  body.style.display = '';
+      if (arrow) arrow.classList.add('open');
+    }
+  }
+
   updateAddQueueBtn();
+}
+
+/* ── Auto-select video/audio chips from settings defaults ──────────────────── */
+function _autoSelectVideoChip() {
+  const formats = Object.values(State.plVideoFormatMap).sort((a, b) => {
+    const ua = a.count === a.total, ub = b.count === b.total;
+    if (ua !== ub) return ub - ua;
+    return b.height - a.height;
+  });
+  if (!formats.length) return;
+
+  const quality        = State.settings.default_video_quality || 'best';
+  const preferredCodec = State.settings.default_codec || '';
+
+  let target = null;
+  if (quality === 'best') {
+    // Best = highest quality, prefer matching codec if set
+    target = preferredCodec
+      ? (formats.find(f => f.codec === preferredCodec && f.count === f.total)
+         || formats.find(f => f.codec === preferredCodec))
+      : formats[0];                    // first = highest universal quality
+  } else {
+    const maxH = parseInt(quality) || 9999;
+    target = formats.find(f => f.height <= maxH && (!preferredCodec || f.codec === preferredCodec))
+          || formats.find(f => f.height <= maxH)
+          || formats[0];
+  }
+  if (target) selectPlVideoFormat(target.key);
+}
+
+function _autoSelectAudioChip() {
+  const formats = Object.values(State.plAudioFormatMap).sort((a, b) => {
+    const ua = a.count === a.total, ub = b.count === b.total;
+    if (ua !== ub) return ub - ua;
+    return b.bitrate - a.bitrate;
+  });
+  if (!formats.length) return;
+
+  // Map audio ext setting to codec string used in format keys
+  const extToCodec = { m4a: 'aac', mp3: 'mp3', opus: 'opus', flac: 'flac', wav: 'wav' };
+  const preferredCodec = extToCodec[State.settings.default_audio_ext || ''] || '';
+  const quality        = State.settings.default_audio_quality || 'best';
+
+  let target = null;
+  if (quality === 'best') {
+    target = preferredCodec
+      ? (formats.find(f => f.codec === preferredCodec && f.count === f.total)
+         || formats.find(f => f.codec === preferredCodec))
+      : formats[0];
+  } else {
+    const maxKbps = parseInt(quality) || 9999;
+    target = formats.find(f => f.bitrate <= maxKbps && (!preferredCodec || f.codec === preferredCodec))
+          || formats.find(f => f.bitrate <= maxKbps)
+          || formats[0];
+  }
+  if (target) selectPlAudioFormat(target.key);
 }
 
 /* ── Accordion entry builder ───────────────────────────────────────────────── */
@@ -1141,48 +1459,84 @@ function renderEntryAccordionBody(eid, entry) {
 
       <!-- Video -->
       <div class="format-section${State.plVideoEnabled ? '' : ' disabled'}" id="pes-v-${eid}">
-        <div class="format-section-header">
-          <span class="format-section-title">${I18N.t('formats.video')}</span>
-          <span class="format-section-meta" id="pec-v-${eid}"></span>
-          <label class="toggle toggle-sm">
+        <div class="format-section-header" id="pefsh-v-${eid}">
+          <label class="toggle toggle-sm" onclick="event.stopPropagation()">
             <input type="checkbox" ${State.plVideoEnabled ? 'checked' : ''}
                    onchange="togglePlEntryStream('${eid}','video',this.checked)">
             <span class="toggle-slider"></span>
           </label>
+          <span class="format-section-title">${I18N.t('formats.video')}</span>
+          <span class="format-section-meta" id="pec-v-${eid}"></span>
+          <span class="pl-global-badge" id="peb-v-${eid}"></span>
+          <span class="pl-accordion-arrow open" id="pea-v-${eid}">▾</span>
         </div>
-        <div id="pef-v-${eid}"></div>
-        <div class="format-size-hint" id="peh-v-${eid}"></div>
+        <div id="pef-v-${eid}">
+          <div id="peff-v-${eid}"></div>
+          <div class="format-size-hint" id="peh-v-${eid}"></div>
+        </div>
       </div>
 
       <!-- Audio -->
       <div class="format-section${State.plAudioEnabled ? '' : ' disabled'}" id="pes-a-${eid}">
-        <div class="format-section-header">
-          <span class="format-section-title">${I18N.t('formats.audio')}</span>
-          <span class="format-section-meta" id="pec-a-${eid}"></span>
-          <label class="toggle toggle-sm">
+        <div class="format-section-header" id="pefsh-a-${eid}">
+          <label class="toggle toggle-sm" onclick="event.stopPropagation()">
             <input type="checkbox" ${State.plAudioEnabled ? 'checked' : ''}
                    onchange="togglePlEntryStream('${eid}','audio',this.checked)">
             <span class="toggle-slider"></span>
           </label>
+          <span class="format-section-title">${I18N.t('formats.audio')}</span>
+          <span class="format-section-meta" id="pec-a-${eid}"></span>
+          <span class="pl-global-badge" id="peb-a-${eid}"></span>
+          <span class="pl-accordion-arrow open" id="pea-a-${eid}">▾</span>
         </div>
-        <div id="pef-a-${eid}"></div>
-        <div class="format-size-hint" id="peh-a-${eid}"></div>
+        <div id="pef-a-${eid}">
+          <div id="peff-a-${eid}"></div>
+          <div class="format-size-hint" id="peh-a-${eid}"></div>
+        </div>
       </div>
 
       <!-- Subtitles -->
       <div class="format-section" id="pes-s-${eid}">
-        <div class="format-section-header">
-          <span class="format-section-title">${I18N.t('formats.subtitles')}</span>
-          <label class="toggle toggle-sm">
+        <div class="format-section-header" id="pefsh-s-${eid}">
+          <label class="toggle toggle-sm" onclick="event.stopPropagation()">
             <input type="checkbox" ${sel.subsEnabled ? 'checked' : ''}
                    onchange="togglePlEntryStream('${eid}','subs',this.checked)">
             <span class="toggle-slider"></span>
           </label>
+          <span class="format-section-title">${I18N.t('formats.subtitles')}</span>
+          <span class="pl-global-badge" id="peb-s-${eid}"></span>
+          <span class="pl-accordion-arrow open" id="pea-s-${eid}">▾</span>
         </div>
-        <div class="sub-list" id="pef-s-${eid}"></div>
+        <div id="pef-s-${eid}">
+          <div class="search-wrap" style="margin-bottom:6px">
+            <input type="text" class="sub-search"
+                   placeholder="${I18N.t('subtitles.search_placeholder') || 'Search language…'}"
+                   oninput="filterEntrySubItems('${eid}', this.value)" autocomplete="off">
+            <button class="search-clear" type="button" tabindex="-1" aria-label="Clear">
+              <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="1" y1="1" x2="9" y2="9"/><line x1="9" y1="1" x2="1" y2="9"/></svg>
+            </button>
+          </div>
+          <div class="sub-list" id="pefs-${eid}"></div>
+        </div>
       </div>
 
     </div>`;
+
+  // Attach accordion clicks for this entry's sections
+  ['v','a','s'].forEach(t => {
+    const header = qs(`#pefsh-${t}-${eid}`);
+    if (!header) return;
+    header.style.cursor = 'pointer';
+    header.addEventListener('click', e => {
+      if (e.target.closest('label')) return;
+      const body2 = qs(`#pef-${t}-${eid}`);
+      const arrow = qs(`#pea-${t}-${eid}`);
+      if (!body2) return;
+      const isOpen = body2.style.display !== 'none';
+      body2.style.display = isOpen ? 'none' : '';
+      if (arrow) arrow.classList.toggle('open', !isOpen);
+    });
+  });
 
   renderEntryFormatChips('video', eid, entry.video_formats || [], sel.video);
   renderEntryFormatChips('audio', eid, entry.audio_formats || [], sel.audio);
@@ -1207,30 +1561,28 @@ function updateEntryHeaderBadges(eid) {
   const entry = State.playlistEntries.find(e => (e._stub?.id || e.id) === eid);
   if (!entry) { el.innerHTML = ''; return; }
 
+  const videoOn = State.plVideoEnabled && (sel.videoEnabled !== false);
+  const audioOn = State.plAudioEnabled && (sel.audioEnabled !== false);
+  const subsOn  = State.plSubsEnabled  && (sel.subsEnabled  !== false);
+
   const parts = [];
-  if (State.plVideoEnabled && sel.video) {
+  if (videoOn && sel.video) {
     const fmt = entry.video_formats?.find(f => f.format_id === sel.video);
-    if (fmt) {
-      const lbl = [fmt.quality_label, fmt.codec].filter(Boolean).join(' · ');
-      parts.push(`<span class="pl-format-badge">▶ ${lbl}</span>`);
-    }
+    if (fmt) parts.push(`<span class="pl-format-badge">▶ ${[fmt.quality_label, fmt.codec].filter(Boolean).join(' · ')}</span>`);
   }
-  if (State.plAudioEnabled && sel.audio) {
+  if (audioOn && sel.audio) {
     const fmt = entry.audio_formats?.find(f => f.format_id === sel.audio);
-    if (fmt) {
-      const lbl = [fmt.quality_label, fmt.codec].filter(Boolean).join(' · ');
-      parts.push(`<span class="pl-format-badge">♪ ${lbl}</span>`);
-    }
+    if (fmt) parts.push(`<span class="pl-format-badge">♪ ${[fmt.quality_label, fmt.codec].filter(Boolean).join(' · ')}</span>`);
   }
-  if (sel.subsEnabled && sel.subs) {
-    parts.push(`<span class="pl-format-badge">SUB ${sel.subs.lang}</span>`);
+  if (subsOn && sel.subs) {
+    parts.push(`<span class="pl-format-badge">SUB ${langName(sel.subs.lang)}</span>`);
   }
   el.innerHTML = parts.join('');
 }
 
 /* ── Entry subtitle list ───────────────────────────────────────────────────── */
 function renderEntrySubList(eid, subs, selectedSub) {
-  const wrap = qs(`#pef-s-${eid}`);
+  const wrap = qs(`#pefs-${eid}`);
   if (!wrap) return;
   wrap.innerHTML = '';
 
@@ -1277,8 +1629,10 @@ function selectEntrySubtitle(eid, lang, auto) {
 }
 
 function renderEntryFormatChips(type, eid, formats, selectedId) {
-  const wrap = qs(`#pef-${type === 'video' ? 'v' : 'a'}-${eid}`);
-  const countEl = qs(`#pec-${type === 'video' ? 'v' : 'a'}-${eid}`);
+  const prefix = type === 'video' ? 'v' : 'a';
+  // Chips go inside peff- (inner wrapper), not pef- (accordion body)
+  const wrap    = qs(`#peff-${prefix}-${eid}`);
+  const countEl = qs(`#pec-${prefix}-${eid}`);
   if (!wrap) return;
   wrap.innerHTML = '';
 
@@ -1338,11 +1692,22 @@ function selectEntryFormat(eid, type, formatId, filesizeHuman) {
   State.plEntrySelections[eid][type === 'video' ? 'video' : 'audio'] = formatId;
 
   const prefix = type === 'video' ? 'v' : 'a';
-  qsa(`#pef-${prefix}-${eid} .format-chip`).forEach(c =>
+  qsa(`#peff-${prefix}-${eid} .format-chip`).forEach(c =>
     c.classList.toggle('selected', c.dataset.formatId === formatId));
 
   const hint = qs(`#peh-${prefix}-${eid}`);
   if (hint) hint.textContent = filesizeHuman ? `~${filesizeHuman}` : '';
+
+  // Badge in accordion header
+  const entry = State.playlistEntries.find(e => (e._stub?.id || e.id) === eid);
+  const fmt   = (type === 'video' ? entry?.video_formats : entry?.audio_formats)
+                  ?.find(f => f.format_id === formatId);
+  const badge = qs(`#peb-${prefix}-${eid}`);
+  if (badge) {
+    badge.innerHTML = fmt
+      ? `<span class="format-chip selected" style="pointer-events:none;font-size:11px;height:22px">${[fmt.quality_label, fmt.codec].filter(Boolean).join(' · ')}</span>`
+      : '';
+  }
 
   updateEntryHeaderBadges(eid);
   updateEntryOrangeState(eid);
@@ -1351,25 +1716,30 @@ function selectEntryFormat(eid, type, formatId, filesizeHuman) {
 
 function _syncEntryVideoChips(eid, formatId) {
   if (!qs(`#pb-${eid}`)?.classList.contains('open')) return;
-  qsa(`#pef-v-${eid} .format-chip`).forEach(c =>
+  qsa(`#peff-v-${eid} .format-chip`).forEach(c =>
     c.classList.toggle('selected', c.dataset.formatId === formatId));
 }
 function _syncEntryAudioChips(eid, formatId) {
   if (!qs(`#pb-${eid}`)?.classList.contains('open')) return;
-  qsa(`#pef-a-${eid} .format-chip`).forEach(c =>
+  qsa(`#peff-a-${eid} .format-chip`).forEach(c =>
     c.classList.toggle('selected', c.dataset.formatId === formatId));
 }
 
 function togglePlEntryStream(eid, type, enabled) {
+  if (!State.plEntrySelections[eid]) State.plEntrySelections[eid] = {};
+
   if (type === 'video') {
+    State.plEntrySelections[eid].videoEnabled = enabled;
     qs(`#pes-v-${eid}`)?.classList.toggle('disabled', !enabled);
   } else if (type === 'audio') {
+    State.plEntrySelections[eid].audioEnabled = enabled;
     qs(`#pes-a-${eid}`)?.classList.toggle('disabled', !enabled);
   } else if (type === 'subs') {
-    qs(`#pes-s-${eid}`)?.classList.toggle('disabled', !enabled);
-    if (!State.plEntrySelections[eid]) State.plEntrySelections[eid] = {};
     State.plEntrySelections[eid].subsEnabled = enabled;
+    qs(`#pes-s-${eid}`)?.classList.toggle('disabled', !enabled);
   }
+
+  updateEntryHeaderBadges(eid);
   updateEntryOrangeState(eid);
   updateAddQueueBtn();
 }
@@ -1414,14 +1784,9 @@ async function addPlaylistToQueue() {
     };
     if (State.plVideoEnabled && sel.video) opts.format_video = sel.video;
     if (State.plAudioEnabled && sel.audio) opts.format_audio = sel.audio;
-    // Per-entry subtitle selection takes precedence over global toggle
     if (sel.subsEnabled && sel.subs) {
       opts.subtitle_lang = sel.subs.lang;
       opts.subtitle_auto = sel.subs.auto;
-      opts.embed_subs    = State.settings.embed_subs;
-    } else if (State.plSubsEnabled && State.plSubsLang) {
-      opts.subtitle_lang = State.plSubsLang;
-      opts.subtitle_auto = true;
       opts.embed_subs    = State.settings.embed_subs;
     }
     try { await API.addToQueue(entry.webpage_url, entry.title, opts); } catch {}
@@ -1443,44 +1808,156 @@ async function loadSettings() {
   } catch {}
 }
 
+/* ── Settings chip helpers ─────────────────────────────────────────────────── */
+function setChipSel(rowId, val, attr = 'data-val') {
+  qsa(`#${rowId} .format-chip`).forEach(c =>
+    c.classList.toggle('selected', c.getAttribute(attr) === val));
+}
+function getChipSel(rowId, attr = 'data-val') {
+  return qs(`#${rowId} .format-chip.selected`)?.getAttribute(attr) ?? null;
+}
+
+/* Language datalist for subtitle preference */
+const COMMON_LANGS = [
+  ['af','Afrikaans'],['ar','Arabic / العربية'],['bg','Bulgarian'],
+  ['zh-Hans','Chinese (Simplified)'],['zh-Hant','Chinese (Traditional)'],
+  ['cs','Czech'],['da','Danish'],['nl','Dutch'],['en','English'],
+  ['fi','Finnish'],['fr','French / Français'],['de','German / Deutsch'],
+  ['el','Greek'],['he','Hebrew'],['hi','Hindi'],['hu','Hungarian'],
+  ['id','Indonesian'],['it','Italian / Italiano'],['ja','Japanese / 日本語'],
+  ['ko','Korean / 한국어'],['no','Norwegian'],['pl','Polish'],
+  ['pt','Portuguese'],['pt-BR','Portuguese (Brazil)'],['ro','Romanian'],
+  ['ru','Russian / Русский'],['sr','Serbian'],['sk','Slovak'],
+  ['es','Spanish / Español'],['sv','Swedish'],['th','Thai'],
+  ['tr','Turkish'],['uk','Ukrainian'],['vi','Vietnamese'],
+];
+
+/* ── Language picker component ────────────────────────────────────────────── */
+function toggleLangPicker(pickerId) {
+  const dropdown = qs(`#${pickerId}-dropdown`);
+  if (!dropdown) return;
+  const willOpen = !dropdown.classList.contains('open');
+  // Close all pickers first
+  qsa('.lang-picker-dropdown.open').forEach(d => d.classList.remove('open'));
+  if (willOpen) {
+    dropdown.classList.add('open');
+    const search = dropdown.querySelector('.lang-picker-search');
+    if (search) { search.value = ''; filterLangPicker(pickerId, ''); search.focus(); }
+  }
+}
+
+function filterLangPicker(pickerId, query) {
+  const q = query.toLowerCase().trim();
+  qsa(`#${pickerId}-list .lang-picker-item`).forEach(item => {
+    const text  = item.textContent.toLowerCase();
+    const code  = (item.dataset.code || '').toLowerCase();
+    item.classList.toggle('hidden', !!(q && !text.includes(q) && !code.includes(q)));
+  });
+}
+
+function selectLangPickerItem(pickerId, inputId, code, label) {
+  const noneLabel = I18N.t('settings.sub_lang_none');
+  const display = qs(`#${pickerId}-display`);
+  if (display) display.textContent = code ? label : noneLabel;
+  const hidden = qs(`#${inputId}`);
+  if (hidden) hidden.value = code;
+  qsa(`#${pickerId}-list .lang-picker-item`).forEach(item =>
+    item.classList.toggle('selected', item.dataset.code === code));
+  qs(`#${pickerId}-dropdown`)?.classList.remove('open');
+}
+
+function buildLangPicker(pickerId, inputId, currentValue) {
+  const list = qs(`#${pickerId}-list`);
+  if (!list) return;
+
+  const sorted = [...COMMON_LANGS].sort((a, b) =>
+    langName(a[0]).localeCompare(langName(b[0])));
+
+  const noneLabel = I18N.t('settings.sub_lang_none');
+  const none = document.createElement('div');
+  none.className = `lang-picker-item${!currentValue ? ' selected' : ''}`;
+  none.dataset.code = '';
+  none.textContent = noneLabel;
+  none.onclick = () => selectLangPickerItem(pickerId, inputId, '', noneLabel);
+  list.innerHTML = '';
+  list.appendChild(none);
+
+  sorted.forEach(([code]) => {
+    const name  = langName(code);
+    const label = `${name} (${code})`;
+    const item  = document.createElement('div');
+    item.className = `lang-picker-item${currentValue === code ? ' selected' : ''}`;
+    item.dataset.code = code;
+    item.textContent  = label;
+    item.onclick = () => selectLangPickerItem(pickerId, inputId, code, label);
+    list.appendChild(item);
+  });
+
+  // Set button display text
+  const display = qs(`#${pickerId}-display`);
+  if (display) {
+    display.textContent = currentValue
+      ? `${langName(currentValue)} (${currentValue})`
+      : noneLabel;
+  }
+  // Sync hidden input
+  const hidden = qs(`#${inputId}`);
+  if (hidden) hidden.value = currentValue || '';
+}
+
 function renderSettings() {
   const s = State.settings;
-  const set = (id, val) => { const el = qs(`#${id}`); if (el) el.value = val ?? ''; };
+  const set    = (id, val) => { const el = qs(`#${id}`); if (el) el.value = val ?? ''; };
   const setChk = (id, val) => { const el = qs(`#${id}`); if (el) el.checked = !!val; };
 
   set('s-lang',         s.language);
   set('s-output-dir',   s.output_dir);
+  set('s-filename-tpl', s.filename_template);
   set('s-video-q',      s.default_video_quality);
+  set('s-video-codec',  s.default_codec ?? '');
   set('s-audio-q',      s.default_audio_quality);
   set('s-audio-ext',    s.default_audio_ext);
-  set('s-audio-lang',   s.default_audio_lang);
-  set('s-sub-lang',     s.default_sub_lang);
+  // Language pickers: build list then set current value
+  buildLangPicker('lp-sub',   's-sub-lang',   s.default_sub_lang);
+  buildLangPicker('lp-audio', 's-audio-lang', s.default_audio_lang);
   set('s-max-dl',       s.max_concurrent);
   set('s-rate-limit',   s.rate_limit);
   set('s-cookies',      s.cookies_file);
   set('s-proxy',        s.proxy);
   setChk('s-sub-auto',  s.default_sub_auto);
   setChk('s-embed-subs',s.embed_subs);
+
+  // Chip selectors
+  setChipSel('theme-chip-row',      s.theme,                 'data-theme');
+  setChipSel('output-format-chips', s.default_output_format, 'data-val');
+  setChipSel('sub-format-chips',    s.subtitle_format,       'data-val');
+
+  populateSubLangDatalist();
 }
 
 async function saveSettingsFromForm() {
-  const val  = id => qs(`#${id}`)?.value ?? '';
-  const chk  = id => qs(`#${id}`)?.checked ?? false;
+  const val = id => qs(`#${id}`)?.value ?? '';
+  const chk = id => qs(`#${id}`)?.checked ?? false;
 
   const patch = {
     language:              val('s-lang'),
     output_dir:            val('s-output-dir'),
+    filename_template:     val('s-filename-tpl'),
     default_video_quality: val('s-video-q'),
+    default_codec:         val('s-video-codec'),
+    default_output_format: getChipSel('output-format-chips') ?? 'mp4',
     default_audio_quality: val('s-audio-q'),
     default_audio_ext:     val('s-audio-ext'),
-    default_audio_lang:    val('s-audio-lang'),
-    default_sub_lang:      val('s-sub-lang'),
+    default_audio_lang:    val('s-audio-lang'),   // hidden input from lang-picker
+    default_sub_lang:      val('s-sub-lang'),      // hidden input from lang-picker
+    default_sub_auto:      chk('s-sub-auto'),
+    embed_subs:            chk('s-embed-subs'),
+    subtitle_format:       getChipSel('sub-format-chips') ?? 'srt',
+    theme:                 getChipSel('theme-chip-row', 'data-theme') ?? 'dark',
     max_concurrent:        parseInt(val('s-max-dl')) || 2,
     rate_limit:            val('s-rate-limit'),
     cookies_file:          val('s-cookies'),
     proxy:                 val('s-proxy'),
-    default_sub_auto:      chk('s-sub-auto'),
-    embed_subs:            chk('s-embed-subs'),
   };
 
   try {
@@ -1574,9 +2051,86 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (e.key === 'Enter') handleAnalyze();
     });
 
-    qs('#theme-toggle').addEventListener('click', toggleTheme);
+    qs('#theme-toggle')?.addEventListener('click', toggleTheme);
     qs('#add-queue-btn').addEventListener('click', addCurrentToQueue);
+
+    // Close lang-pickers when clicking outside
+    document.addEventListener('click', e => {
+      if (!e.target.closest('.lang-picker')) {
+        qsa('.lang-picker-dropdown.open').forEach(d => d.classList.remove('open'));
+      }
+    });
+
+    // Format section accordions for single video (V/A/S)
+    initFormatSectionAccordions();
+    // ── Search-clear button: show X while typing, clear on click ───────────
+    document.addEventListener('input', e => {
+      if (!e.target.classList.contains('sub-search')) return;
+      const clear = e.target.closest('.search-wrap')?.querySelector('.search-clear');
+      if (clear) clear.classList.toggle('visible', e.target.value.length > 0);
+    });
+    document.addEventListener('click', e => {
+      const clear = e.target.closest('.search-clear');
+      if (!clear) return;
+      const input = clear.closest('.search-wrap')?.querySelector('.sub-search');
+      if (!input) return;
+      input.value = '';
+      clear.classList.remove('visible');
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+      input.focus();
+    });
+
+    // Subtitle search — global playlist selector
+    qs('#pl-subs-search')?.addEventListener('input', e =>
+      filterPlSubtitleChips(e.target.value));
+
     qs('#save-settings-btn').addEventListener('click', saveSettingsFromForm);
+
+    // Real-time language switch — no Save button needed
+    qs('#s-lang')?.addEventListener('change', async e => {
+      const lang = e.target.value;
+      await I18N.setLocale(lang);
+      State.settings.language = lang;
+      try { await API.saveSettings({ language: lang }); } catch {}
+    });
+
+    // Native folder picker for output directory
+    qs('#browse-dir-btn')?.addEventListener('click', async () => {
+      if (!window.pywebview?.api?.pick_folder) return;
+      try {
+        const path = await window.pywebview.api.pick_folder();
+        if (path) qs('#s-output-dir').value = path;
+      } catch {}
+    });
+
+    // ── Template tokens: click to insert at cursor ──────────────────────────
+    qsa('.tpl-token').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const token = btn.dataset.token;
+        const input = qs('#s-filename-tpl');
+        if (!input) return;
+        const start = input.selectionStart ?? input.value.length;
+        const end   = input.selectionEnd   ?? input.value.length;
+        input.value = input.value.slice(0, start) + token + input.value.slice(end);
+        input.selectionStart = input.selectionEnd = start + token.length;
+        input.focus();
+      });
+    });
+
+    // ── Chip selectors: theme, output format, subtitle format ───────────────
+    qsa('#theme-chip-row .format-chip').forEach(c => {
+      c.addEventListener('click', () => {
+        setChipSel('theme-chip-row', c.dataset.theme, 'data-theme');
+        applyTheme(c.dataset.theme);
+        API.saveSettings({ theme: c.dataset.theme });
+      });
+    });
+    qsa('#output-format-chips .format-chip').forEach(c => {
+      c.addEventListener('click', () => setChipSel('output-format-chips', c.dataset.val));
+    });
+    qsa('#sub-format-chips .format-chip').forEach(c => {
+      c.addEventListener('click', () => setChipSel('sub-format-chips', c.dataset.val));
+    });
 
     qs('#reset-settings-btn').addEventListener('click', async () => {
       const ok = await showDialog({
@@ -1589,6 +2143,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (ok) {
         try {
           State.settings = await API.resetSettings();
+          await I18N.setLocale(State.settings.language || 'en');
           renderSettings();
           toast(I18N.t('settings.reset_done'), 'info');
         } catch (err) {

@@ -13,17 +13,28 @@
   <!-- ── Header ─────────────────────────────────────────────────────────── -->
   <header class="app-header">
     <div class="logo">
-      <img src="/static/img/icon.png" class="logo-icon" width="30" height="30" alt="GRABBIT">
-      <img src="/static/img/logo.png" class="logo-text-img" height="22" alt="GRABBIT">
+      <img src="/static/img/logo_full.png" class="logo-full" alt="GRABBIT" height="36">
     </div>
     <div class="header-right">
       <!-- WebSocket connection status dot -->
       <div class="ws-indicator" id="ws-indicator" data-i18n-title="ws.connecting">
         <span class="ws-dot" id="ws-dot"></span>
       </div>
-      <button class="btn-icon" id="theme-toggle" data-i18n-title="header.dark_mode">
-        <span id="theme-toggle-icon">☀️</span>
-      </button>
+      <!-- Custom window controls (frameless) -->
+      <div class="window-controls">
+        <button class="window-btn minimize" title="Minimize"
+                onclick="window.pywebview?.api?.minimize_window()">
+          <svg width="10" height="2" viewBox="0 0 10 2" fill="currentColor"><rect width="10" height="2" rx="1"/></svg>
+        </button>
+        <button class="window-btn maximize" title="Maximize"
+                onclick="window.pywebview?.api?.maximize_window()">
+          <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="0.75" y="0.75" width="8.5" height="8.5" rx="1.5"/></svg>
+        </button>
+        <button class="window-btn close" title="Close"
+                onclick="window.pywebview?.api?.close_window()">
+          <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="1" y1="1" x2="9" y2="9"/><line x1="9" y1="1" x2="1" y2="9"/></svg>
+        </button>
+      </div>
     </div>
   </header>
 
@@ -117,38 +128,68 @@
 
         <!-- Global format settings for all videos in the playlist -->
         <div class="pl-format-bar" id="pl-format-bar">
-          <!-- Video toggle + chips -->
-          <div class="pl-format-row">
-            <label class="toggle toggle-sm">
-              <input type="checkbox" id="pl-video-toggle" checked>
-              <span class="toggle-slider"></span>
-            </label>
-            <span class="format-section-title" data-i18n="formats.video">Video</span>
+
+          <!-- Video accordion -->
+          <div class="pl-global-accordion" id="pl-video-accordion">
+            <div class="pl-global-header" id="pl-video-header">
+              <label class="toggle toggle-sm" onclick="event.stopPropagation()">
+                <input type="checkbox" id="pl-video-toggle" checked>
+                <span class="toggle-slider"></span>
+              </label>
+              <span class="format-section-title" data-i18n="formats.video">Video</span>
+              <span class="pl-global-badge" id="pl-video-badge"></span>
+              <span class="pl-accordion-arrow" id="pl-video-arrow">▾</span>
+            </div>
+            <div class="pl-global-body" id="pl-video-chip-area" style="display:none">
+              <div class="format-grid" id="pl-video-chips"></div>
+            </div>
           </div>
-          <div class="pl-chip-area" id="pl-video-chip-area">
-            <div class="format-grid" id="pl-video-chips"></div>
+
+          <!-- Audio accordion -->
+          <div class="pl-global-accordion" id="pl-audio-accordion">
+            <div class="pl-global-header" id="pl-audio-header">
+              <label class="toggle toggle-sm" onclick="event.stopPropagation()">
+                <input type="checkbox" id="pl-audio-toggle" checked>
+                <span class="toggle-slider"></span>
+              </label>
+              <span class="format-section-title" data-i18n="formats.audio">Audio</span>
+              <span class="pl-global-badge" id="pl-audio-badge"></span>
+              <span class="pl-accordion-arrow" id="pl-audio-arrow">▾</span>
+            </div>
+            <div class="pl-global-body" id="pl-audio-chip-area" style="display:none">
+              <div class="format-grid" id="pl-audio-chips"></div>
+            </div>
           </div>
-          <!-- Audio toggle + chips -->
-          <div class="pl-format-row">
-            <label class="toggle toggle-sm">
-              <input type="checkbox" id="pl-audio-toggle" checked>
-              <span class="toggle-slider"></span>
-            </label>
-            <span class="format-section-title" data-i18n="formats.audio">Audio</span>
+
+          <!-- Subtitles accordion -->
+          <div class="pl-global-accordion" id="pl-subs-accordion">
+            <div class="pl-global-header" id="pl-subs-header">
+              <label class="toggle toggle-sm" onclick="event.stopPropagation()">
+                <input type="checkbox" id="pl-subs-toggle">
+                <span class="toggle-slider"></span>
+              </label>
+              <span class="format-section-title" data-i18n="formats.subtitles">Subtitles</span>
+              <span class="pl-global-badge" id="pl-subs-badge"></span>
+              <span class="pl-accordion-arrow" id="pl-subs-arrow">▾</span>
+            </div>
+            <div class="pl-global-body" id="pl-subs-chip-area" style="display:none">
+              <div class="search-wrap">
+                <input type="text" class="sub-search" id="pl-subs-search"
+                       data-i18n-placeholder="subtitles.search_placeholder"
+                       placeholder="Search language…" autocomplete="off">
+                <button class="search-clear" type="button" tabindex="-1" aria-label="Clear"><svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="1" y1="1" x2="9" y2="9"/><line x1="9" y1="1" x2="1" y2="9"/></svg></button>
+              </div>
+              <div class="pl-subs-section" id="pl-manual-subs-section">
+                <span class="pl-subs-group-label" data-i18n="subtitles.manual">Reali</span>
+                <div class="format-grid" id="pl-manual-subs-chips"></div>
+              </div>
+              <div class="pl-subs-section" id="pl-auto-subs-section">
+                <span class="pl-subs-group-label" data-i18n="subtitles.auto">Generati</span>
+                <div class="format-grid" id="pl-auto-subs-chips"></div>
+              </div>
+            </div>
           </div>
-          <div class="pl-chip-area" id="pl-audio-chip-area">
-            <div class="format-grid" id="pl-audio-chips"></div>
-          </div>
-          <!-- Subtitles toggle + lang input -->
-          <div class="pl-format-row">
-            <label class="toggle toggle-sm">
-              <input type="checkbox" id="pl-subs-toggle">
-              <span class="toggle-slider"></span>
-            </label>
-            <span class="format-section-title" data-i18n="formats.subtitles">Subtitles</span>
-            <input class="pl-subs-lang-input" id="pl-subs-lang" type="text"
-                   placeholder="en, it…" maxlength="10" style="display:none">
-          </div>
+
         </div>
 
         <div style="display:flex;gap:8px;margin-bottom:10px">
@@ -193,49 +234,67 @@
 
         <!-- Video format selector -->
         <div class="format-section" id="section-video">
-          <div class="format-section-header">
-            <span class="format-section-title" data-i18n="formats.video">Video</span>
-            <span class="format-section-meta" id="video-count"></span>
-            <label class="toggle toggle-sm">
+          <div class="format-section-header" id="fsh-video">
+            <label class="toggle toggle-sm" onclick="event.stopPropagation()">
               <input type="checkbox" id="video-toggle" checked>
               <span class="toggle-slider"></span>
             </label>
+            <span class="format-section-title" data-i18n="formats.video">Video</span>
+            <span class="format-section-meta" id="video-count"></span>
+            <span class="pl-global-badge" id="video-sel-badge"></span>
+            <span class="pl-accordion-arrow open" id="fsa-video">▾</span>
           </div>
-          <div class="format-grid" id="video-formats"></div>
-          <div class="format-size-hint" id="video-size-hint"></div>
-          <div class="format-container-row" id="container-row">
-            <span class="format-section-title" data-i18n="formats.container">Container</span>
-            <div class="format-grid">
-              <button class="format-chip selected" id="container-mp4" onclick="selectContainer('mp4')">MP4</button>
-              <button class="format-chip" id="container-mkv" onclick="selectContainer('mkv')">MKV</button>
+          <div id="fsb-video">
+            <div id="video-formats"></div>
+            <div class="format-size-hint" id="video-size-hint"></div>
+            <div class="format-container-row" id="container-row">
+              <span class="format-section-title" data-i18n="formats.container">Container</span>
+              <div class="format-grid">
+                <button class="format-chip selected" id="container-mp4" onclick="selectContainer('mp4')">MP4</button>
+                <button class="format-chip" id="container-mkv" onclick="selectContainer('mkv')">MKV</button>
+              </div>
             </div>
           </div>
         </div>
 
         <!-- Audio format selector -->
         <div class="format-section" id="section-audio">
-          <div class="format-section-header">
-            <span class="format-section-title" data-i18n="formats.audio">Audio</span>
-            <span class="format-section-meta" id="audio-count"></span>
-            <label class="toggle toggle-sm">
+          <div class="format-section-header" id="fsh-audio">
+            <label class="toggle toggle-sm" onclick="event.stopPropagation()">
               <input type="checkbox" id="audio-toggle" checked>
               <span class="toggle-slider"></span>
             </label>
+            <span class="format-section-title" data-i18n="formats.audio">Audio</span>
+            <span class="format-section-meta" id="audio-count"></span>
+            <span class="pl-global-badge" id="audio-sel-badge"></span>
+            <span class="pl-accordion-arrow open" id="fsa-audio">▾</span>
           </div>
-          <div class="format-grid" id="audio-formats"></div>
-          <div class="format-size-hint" id="audio-size-hint"></div>
+          <div id="fsb-audio">
+            <div id="audio-formats"></div>
+            <div class="format-size-hint" id="audio-size-hint"></div>
+          </div>
         </div>
 
         <!-- Subtitle selector -->
         <div class="format-section" id="section-subs">
-          <div class="format-section-header">
-            <span class="format-section-title" data-i18n="formats.subtitles">Subtitles</span>
-            <label class="toggle toggle-sm">
+          <div class="format-section-header" id="fsh-subs">
+            <label class="toggle toggle-sm" onclick="event.stopPropagation()">
               <input type="checkbox" id="subs-toggle">
               <span class="toggle-slider"></span>
             </label>
+            <span class="format-section-title" data-i18n="formats.subtitles">Subtitles</span>
+            <span class="pl-global-badge" id="subs-sel-badge"></span>
+            <span class="pl-accordion-arrow open" id="fsa-subs">▾</span>
           </div>
-          <div class="sub-list" id="sub-list"></div>
+          <div id="fsb-subs">
+            <div class="search-wrap">
+            <input type="text" class="sub-search" id="sub-search"
+                   data-i18n-placeholder="subtitles.search_placeholder"
+                   placeholder="Search language…" autocomplete="off">
+            <button class="search-clear" type="button" tabindex="-1" aria-label="Clear"><svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="1" y1="1" x2="9" y2="9"/><line x1="9" y1="1" x2="1" y2="9"/></svg></button>
+          </div>
+            <div class="sub-list" id="sub-list"></div>
+          </div>
         </div>
 
         <!-- Footer actions -->
@@ -303,136 +362,227 @@
 
     <!-- ── Settings tab ──────────────────────────────────────────────────── -->
     <section id="tab-settings" class="tab-pane">
+      <div class="settings-page">
 
-      <div class="settings-grid">
-
-        <!-- Interface -->
-        <div class="settings-group">
-          <div class="settings-group-title" data-i18n="settings.group_interface">Interface</div>
-
-          <div class="settings-row">
-            <label class="settings-label" for="s-lang" data-i18n="settings.language">Language</label>
-            <select class="select" id="s-lang">
-              <option value="en">English</option>
-              <option value="it">Italiano</option>
-              <option value="fr">Français</option>
-              <option value="de">Deutsch</option>
-              <option value="es">Español</option>
-              <option value="pt">Português</option>
-            </select>
-          </div>
-
-          <div class="settings-row">
-            <label class="settings-label" for="s-output-dir" data-i18n="settings.output_dir">Download folder</label>
-            <input class="input" type="text" id="s-output-dir">
-          </div>
-
-          <div class="settings-row">
-            <label class="settings-label" for="s-max-dl" data-i18n="settings.max_concurrent">Max concurrent downloads</label>
-            <select class="select" id="s-max-dl">
-              <option value="1">1</option>
-              <option value="2">2</option>
-              <option value="3">3</option>
-              <option value="4">4</option>
-            </select>
+        <!-- INTERFACE -->
+        <div class="settings-section">
+          <div class="settings-section-title" data-i18n="settings.group_interface">Interface</div>
+          <div class="settings-row-grid settings-grid-2">
+            <div class="settings-field">
+              <label class="settings-label" for="s-lang" data-i18n="settings.language">Language</label>
+              <select class="select" id="s-lang" style="width:180px">
+                <option value="de">Deutsch</option>
+                <option value="en">English</option>
+                <option value="es">Español</option>
+                <option value="fr">Français</option>
+                <option value="it">Italiano</option>
+                <option value="pt">Português</option>
+              </select>
+            </div>
+            <div class="settings-field">
+              <label class="settings-label" data-i18n="settings.theme">Theme</label>
+              <div class="chip-row" id="theme-chip-row">
+                <button class="format-chip" data-theme="dark" data-i18n="settings.theme_dark">Dark</button>
+                <button class="format-chip" data-theme="light" data-i18n="settings.theme_light">Light</button>
+              </div>
+            </div>
           </div>
         </div>
 
-        <!-- Video -->
-        <div class="settings-group">
-          <div class="settings-group-title" data-i18n="settings.group_video">Video</div>
+        <!-- DOWNLOAD -->
+        <div class="settings-section">
+          <div class="settings-section-title" data-i18n="settings.group_download">Download</div>
 
-          <div class="settings-row">
-            <label class="settings-label" for="s-video-q" data-i18n="settings.video_quality">Default quality</label>
-            <select class="select" id="s-video-q">
-              <option value="best" data-i18n="settings.best">Best available</option>
-              <option value="2160">4K (2160p)</option>
-              <option value="1440">1440p</option>
-              <option value="1080">1080p</option>
-              <option value="720">720p</option>
-              <option value="576">576p</option>
-              <option value="480">480p</option>
-              <option value="360">360p</option>
-            </select>
+          <!-- Row 1: output folder -->
+          <div class="settings-field" style="margin-bottom:14px">
+            <label class="settings-label" for="s-output-dir" data-i18n="settings.output_dir">Default folder</label>
+            <div class="settings-row-inline">
+              <input class="input" type="text" id="s-output-dir" style="flex:1">
+              <button class="btn btn-secondary" id="browse-dir-btn" type="button"
+                      data-i18n="settings.browse">Browse</button>
+            </div>
+          </div>
+
+          <!-- Row 2: template (2/3) + concurrent (1/3) -->
+          <div class="settings-row-grid settings-grid-2-1" style="margin-bottom:8px">
+            <div class="settings-field">
+              <label class="settings-label" for="s-filename-tpl" data-i18n="settings.filename_template">Filename template</label>
+              <input class="input" type="text" id="s-filename-tpl" placeholder="%(title)s.%(ext)s">
+            </div>
+            <div class="settings-field">
+              <label class="settings-label" for="s-max-dl" data-i18n="settings.max_concurrent">Concurrent</label>
+              <select class="select" id="s-max-dl">
+                <option value="1">1</option><option value="2">2</option>
+                <option value="3">3</option><option value="4">4</option>
+                <option value="5">5</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Template guide: always visible, tokens are clickable → insert in field -->
+          <div class="tpl-guide-bar">
+            <span class="tpl-guide-label" data-i18n="settings.tpl_guide_label">Insert:</span>
+            <button class="tpl-token" data-token="%(title)s">%(title)s</button>
+            <button class="tpl-token" data-token="%(uploader)s">%(uploader)s</button>
+            <button class="tpl-token" data-token="%(upload_date)s">%(upload_date)s</button>
+            <button class="tpl-token" data-token="%(id)s">%(id)s</button>
+            <button class="tpl-token" data-token="%(ext)s">%(ext)s</button>
+            <button class="tpl-token" data-token="%(resolution)s">%(resolution)s</button>
+            <button class="tpl-token" data-token="%(playlist_title)s">%(playlist_title)s</button>
+            <button class="tpl-token" data-token="%(playlist_index)s">%(playlist_index)s</button>
+          </div>
+
+          <!-- Row 3: output format -->
+          <div class="settings-field">
+            <label class="settings-label" data-i18n="settings.output_format">Default output format</label>
+            <div class="chip-row" id="output-format-chips">
+              <button class="format-chip" data-val="mp4">MP4</button>
+              <button class="format-chip" data-val="mkv">MKV</button>
+            </div>
           </div>
         </div>
 
-        <!-- Audio -->
-        <div class="settings-group">
-          <div class="settings-group-title" data-i18n="settings.group_audio">Audio</div>
-
-          <div class="settings-row">
-            <label class="settings-label" for="s-audio-q" data-i18n="settings.audio_quality">Default quality</label>
-            <select class="select" id="s-audio-q">
-              <option value="best" data-i18n="settings.best">Best available</option>
-              <option value="320">320 kbps</option>
-              <option value="256">256 kbps</option>
-              <option value="192">192 kbps</option>
-              <option value="128">128 kbps</option>
-            </select>
-          </div>
-
-          <div class="settings-row">
-            <label class="settings-label" for="s-audio-ext" data-i18n="settings.audio_format">Format</label>
-            <select class="select" id="s-audio-ext">
-              <option value="m4a">M4A (AAC)</option>
-              <option value="mp3">MP3</option>
-              <option value="opus">Opus</option>
-              <option value="flac">FLAC</option>
-              <option value="wav">WAV</option>
-            </select>
-          </div>
-
-          <div class="settings-row">
-            <label class="settings-label" for="s-audio-lang" data-i18n="settings.audio_lang">Preferred language</label>
-            <input class="input" type="text" id="s-audio-lang" placeholder="e.g. en, it, fr">
+        <!-- VIDEO -->
+        <div class="settings-section">
+          <div class="settings-section-title" data-i18n="settings.group_video">Video</div>
+          <div class="settings-row-grid settings-grid-2">
+            <div class="settings-field">
+              <label class="settings-label" for="s-video-q" data-i18n="settings.video_quality">Default quality</label>
+              <select class="select" id="s-video-q">
+                <option value="best" data-i18n="settings.best">Best available</option>
+                <option value="2160">4K (2160p)</option>
+                <option value="1440">1440p</option>
+                <option value="1080">1080p</option>
+                <option value="720">720p</option>
+                <option value="576">576p</option>
+                <option value="480">480p</option>
+                <option value="360">360p</option>
+              </select>
+            </div>
+            <div class="settings-field">
+              <label class="settings-label" for="s-video-codec" data-i18n="settings.video_codec">Default codec</label>
+              <select class="select" id="s-video-codec">
+                <option value="" data-i18n="settings.any_codec">Any</option>
+                <option value="avc1">H.264 (AVC)</option>
+                <option value="vp9">VP9</option>
+                <option value="av01">AV1</option>
+                <option value="hevc">H.265 (HEVC)</option>
+              </select>
+            </div>
           </div>
         </div>
 
-        <!-- Subtitles -->
-        <div class="settings-group">
-          <div class="settings-group-title" data-i18n="settings.group_subs">Subtitles</div>
-
-          <div class="settings-row">
-            <label class="settings-label" for="s-sub-lang" data-i18n="settings.sub_lang">Preferred language</label>
-            <input class="input" type="text" id="s-sub-lang" placeholder="e.g. en, it">
-          </div>
-
-          <div class="toggle-row">
-            <span class="settings-label" data-i18n="settings.sub_auto">Include auto-generated</span>
-            <label class="toggle"><input type="checkbox" id="s-sub-auto"><span class="toggle-slider"></span></label>
-          </div>
-
-          <div class="toggle-row">
-            <span class="settings-label" data-i18n="settings.embed_subs">Embed subtitles in file</span>
-            <label class="toggle"><input type="checkbox" id="s-embed-subs"><span class="toggle-slider"></span></label>
+        <!-- AUDIO -->
+        <div class="settings-section">
+          <div class="settings-section-title" data-i18n="settings.group_audio">Audio</div>
+          <div class="settings-row-grid settings-grid-3">
+            <div class="settings-field">
+              <label class="settings-label" for="s-audio-ext" data-i18n="settings.audio_format">Format</label>
+              <select class="select" id="s-audio-ext">
+                <option value="m4a">M4A (AAC)</option>
+                <option value="mp3">MP3</option>
+                <option value="opus">Opus</option>
+                <option value="flac">FLAC</option>
+                <option value="wav">WAV</option>
+              </select>
+            </div>
+            <div class="settings-field">
+              <label class="settings-label" for="s-audio-q" data-i18n="settings.audio_quality">Quality</label>
+              <select class="select" id="s-audio-q">
+                <option value="best" data-i18n="settings.best">Best available</option>
+                <option value="320">320 kbps</option>
+                <option value="256">256 kbps</option>
+                <option value="192">192 kbps</option>
+                <option value="128">128 kbps</option>
+              </select>
+            </div>
+            <div class="settings-field">
+              <label class="settings-label" data-i18n="settings.audio_lang">Language</label>
+              <div class="lang-picker" id="lp-audio">
+                <button class="lang-picker-btn" type="button" onclick="toggleLangPicker('lp-audio')">
+                  <span id="lp-audio-display"></span>
+                  <svg width="10" height="6" viewBox="0 0 10 6" fill="none" stroke="#8888A4" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1 1l4 4 4-4"/></svg>
+                </button>
+                <div class="lang-picker-dropdown" id="lp-audio-dropdown">
+                  <input type="text" class="lang-picker-search"
+                         data-i18n-placeholder="subtitles.search_placeholder"
+                         placeholder="Search language…"
+                         oninput="filterLangPicker('lp-audio', this.value)">
+                  <div class="lang-picker-list" id="lp-audio-list"></div>
+                </div>
+              </div>
+              <input type="hidden" id="s-audio-lang">
+            </div>
           </div>
         </div>
 
-        <!-- Network -->
-        <div class="settings-group full">
-          <div class="settings-group-title" data-i18n="settings.group_network">Network</div>
-          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
-            <div class="settings-row">
+        <!-- SUBTITLES -->
+        <div class="settings-section">
+          <div class="settings-section-title" data-i18n="settings.group_subs">Subtitles</div>
+          <div class="settings-row-grid settings-grid-2" style="margin-bottom:12px">
+            <div class="settings-field">
+              <label class="settings-label" for="s-sub-lang" data-i18n="settings.sub_lang">Default language</label>
+              <div class="lang-picker" id="lp-sub">
+                <button class="lang-picker-btn" type="button" onclick="toggleLangPicker('lp-sub')">
+                  <span id="lp-sub-display"></span>
+                  <svg width="10" height="6" viewBox="0 0 10 6" fill="none" stroke="#8888A4" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1 1l4 4 4-4"/></svg>
+                </button>
+                <div class="lang-picker-dropdown" id="lp-sub-dropdown">
+                  <input type="text" class="lang-picker-search"
+                         data-i18n-placeholder="subtitles.search_placeholder"
+                         placeholder="Search language…"
+                         oninput="filterLangPicker('lp-sub', this.value)">
+                  <div class="lang-picker-list" id="lp-sub-list"></div>
+                </div>
+              </div>
+              <input type="hidden" id="s-sub-lang">
+            </div>
+            <div class="settings-field">
+              <label class="settings-label" data-i18n="settings.sub_format">Output format</label>
+              <div class="chip-row" id="sub-format-chips">
+                <button class="format-chip" data-val="srt">SRT</button>
+                <button class="format-chip" data-val="ass">ASS</button>
+                <button class="format-chip" data-val="vtt">VTT</button>
+              </div>
+              <span class="settings-hint" data-i18n="settings.sub_format_hint">SRT = most compatible (BluRay, SmartTV)</span>
+            </div>
+          </div>
+          <div class="settings-row-grid settings-grid-2">
+            <div class="toggle-row">
+              <span class="settings-label" data-i18n="settings.sub_auto">Include auto-generated</span>
+              <label class="toggle"><input type="checkbox" id="s-sub-auto"><span class="toggle-slider"></span></label>
+            </div>
+            <div class="toggle-row">
+              <span class="settings-label" data-i18n="settings.embed_subs">Embed in video file</span>
+              <label class="toggle"><input type="checkbox" id="s-embed-subs"><span class="toggle-slider"></span></label>
+            </div>
+          </div>
+        </div>
+
+        <!-- NETWORK -->
+        <div class="settings-section">
+          <div class="settings-section-title" data-i18n="settings.group_network">Network</div>
+          <div class="settings-row-grid settings-grid-3">
+            <div class="settings-field">
               <label class="settings-label" for="s-rate-limit" data-i18n="settings.rate_limit">Rate limit</label>
               <input class="input" type="text" id="s-rate-limit" placeholder="e.g. 1M">
               <span class="settings-hint" data-i18n="settings.rate_limit_hint">Empty = unlimited</span>
             </div>
-            <div class="settings-row">
+            <div class="settings-field">
               <label class="settings-label" for="s-cookies" data-i18n="settings.cookies">Cookies file</label>
               <input class="input" type="text" id="s-cookies" placeholder="/path/to/cookies.txt">
             </div>
-            <div class="settings-row">
+            <div class="settings-field">
               <label class="settings-label" for="s-proxy" data-i18n="settings.proxy">Proxy</label>
               <input class="input" type="text" id="s-proxy" placeholder="socks5://127.0.0.1:1080">
             </div>
           </div>
         </div>
 
-      </div><!-- /settings-grid -->
+      </div><!-- /settings-page -->
 
       <!-- Save / Reset -->
-      <div style="display:flex;gap:8px;justify-content:flex-end;max-width:720px;margin:16px auto 0">
+      <div class="settings-footer">
         <button class="btn btn-secondary" id="reset-settings-btn" data-i18n="settings.reset">Reset defaults</button>
         <button class="btn btn-primary" id="save-settings-btn" data-i18n="settings.save">Save settings</button>
       </div>

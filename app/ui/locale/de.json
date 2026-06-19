@@ -35,8 +35,9 @@
   "subtitles": {
     "none": "Keine Untertitel",
     "none_option": "Keine",
-    "manual": "Manuell",
-    "auto": "Automatisch generiert"
+    "manual": "Echte",
+    "auto": "Automatisch generiert",
+    "search_placeholder": "Sprache suchen…"
   },
   "queue": {
     "empty": "Noch keine Downloads. Analysieren Sie eine URL.",
@@ -106,7 +107,31 @@
     "saved": "Einstellungen gespeichert",
     "reset_confirm": "Alle Einstellungen zurücksetzen?",
     "reset_done": "Einstellungen zurückgesetzt",
-    "reset_confirm_title": "Einstellungen zurücksetzen"
+    "reset_confirm_title": "Einstellungen zurücksetzen",
+    "browse": "Durchsuchen",
+    "filename_template": "Dateiname-Vorlage",
+    "filename_template_hint": "yt-dlp-Vorlage — leer = Standard",
+    "tpl_vars": {
+      "title": "Videotitel",
+      "uploader": "Kanalname",
+      "upload_date": "Upload-Datum (JJJJMMTT)",
+      "id": "Video-ID",
+      "ext": "Erweiterung (erforderlich)",
+      "resolution": "Auflösung",
+      "playlist_title": "Playlist-Titel",
+      "playlist_index": "Position in der Playlist"
+    },
+    "theme": "Design",
+    "theme_dark": "Dunkel",
+    "theme_light": "Hell",
+    "group_download": "Download",
+    "output_format": "Standard-Ausgabeformat",
+    "video_codec": "Standard-Codec",
+    "any_codec": "Beliebig",
+    "sub_format": "Untertitelformat",
+    "sub_format_hint": "SRT = kompatibelste Option (BluRay, SmartTV)",
+    "tpl_guide_label": "Einfügen:",
+    "sub_lang_none": "— Keine / Beliebig —"
   },
   "common": {
     "cancel": "Abbrechen",

@@ -35,8 +35,9 @@
   "subtitles": {
     "none": "Nessun sottotitolo disponibile",
     "none_option": "Nessuno",
-    "manual": "Manuale",
-    "auto": "Auto-generato"
+    "manual": "Reali",
+    "auto": "Generati automaticamente",
+    "search_placeholder": "Cerca lingua…"
   },
   "queue": {
     "empty": "Nessun download ancora. Analizza un URL per iniziare.",
@@ -106,7 +107,31 @@
     "saved": "Impostazioni salvate",
     "reset_confirm": "Ripristinare tutte le impostazioni ai valori predefiniti?",
     "reset_done": "Impostazioni ripristinate",
-    "reset_confirm_title": "Ripristina impostazioni"
+    "reset_confirm_title": "Ripristina impostazioni",
+    "browse": "Sfoglia",
+    "filename_template": "Template nome file",
+    "filename_template_hint": "Template yt-dlp — vuoto = predefinito",
+    "tpl_vars": {
+      "title": "Titolo video",
+      "uploader": "Nome canale",
+      "upload_date": "Data upload (YYYYMMDD)",
+      "id": "ID video",
+      "ext": "Estensione (obbligatoria)",
+      "resolution": "Risoluzione",
+      "playlist_title": "Titolo playlist",
+      "playlist_index": "Posizione in playlist"
+    },
+    "theme": "Tema",
+    "theme_dark": "Scuro",
+    "theme_light": "Chiaro",
+    "group_download": "Download",
+    "output_format": "Formato di uscita predefinito",
+    "video_codec": "Codec predefinito",
+    "any_codec": "Qualsiasi",
+    "sub_format": "Formato sottotitoli",
+    "sub_format_hint": "SRT = più compatibile (BluRay, SmartTV)",
+    "tpl_guide_label": "Inserisci:",
+    "sub_lang_none": "— Nessuna / Qualsiasi —"
   },
   "common": {
     "cancel": "Annulla",

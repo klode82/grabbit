@@ -89,15 +89,11 @@ grabbit/
 │       │       ├── api.js           # Client HTTP + WebSocket
 │       │       └── app.js           # Logica UI principale
 │       └── locale/
-│           ├── en.json
-│           ├── it.json
-│           ├── fr.json
-│           ├── de.json
-│           ├── es.json
-│           └── pt.json
+│           ├── en.json / it.json / fr.json / de.json / es.json / pt.json
 │
 └── assets/
-    └── icon.png                     # (Phase 10)
+    ├── icon.png / icon.ico / icon.icns
+    └── logo.png
 ```
 
 ---
@@ -109,160 +105,155 @@ grabbit/
 ### ✅ Phase 0 — Setup & Architettura
 > Fondamenta del progetto.
 
-- [x] Struttura cartelle
-- [x] `requirements.txt`
+- [x] Struttura cartelle e `requirements.txt`
 - [x] `main.py` — pywebview + FastAPI + attesa server
 - [x] `app/server.py` — factory FastAPI, mount static/locale
-- [x] Test: finestra pywebview si apre e carica la UI
+- [x] Icona app (PNG 1024×1024, ICO multi-size, ICNS macOS)
 
 ---
 
 ### ✅ Phase 1 — Core Engine
 > Il motore yt-dlp e i servizi backend.
 
-- [x] `core/ytdlp_wrapper.py`
-  - `analyze(url)` — estrae metadati senza scaricare
-  - `_parse_video()` — separa formati video-only, audio-only, combinati
-  - `_parse_playlist()` — stub entries da playlist
-  - `_parse_subtitles()` — manuali + auto-generati per lingua
-  - `download(url, options, progress_callback)` — download con hook progress
-- [x] `core/download_queue.py`
-  - Coda thread-safe con `threading.Lock`
-  - Concorrenza configurabile (`max_concurrent`)
-  - Stati: `pending → downloading → completed | error | cancelled`
-  - Broadcast eventi a listener registrati
-- [x] `core/settings_manager.py`
-  - Default sensati per tutti i parametri
-  - Persistenza in `~/.config/grabbit/settings.json`
-  - Metodi `get`, `update`, `reset`
-- [x] `api/routes.py`
-  - `POST /api/analyze`
-  - `POST /api/analyze/playlist-entry`
-  - `GET|POST /api/queue`, `POST /api/queue/add`, `DELETE /api/queue/{id}`
-  - `GET|POST /api/settings`, `POST /api/settings/reset`
-  - `WS /api/ws` — WebSocket con auto-reconnect lato client
-- [x] `ui/` — SPA base con tab Download / Coda / Impostazioni
-- [x] `ui/static/css/main.css` — design system dark/light
-- [x] `ui/static/js/i18n.js` — engine i18n con `t('key')`
-- [x] `ui/static/js/api.js` — client fetch + WebSocket manager
-- [x] `ui/static/js/app.js` — logica UI completa
+- [x] `ytdlp_wrapper.py` — `analyze()`, `_parse_video()`, `_parse_playlist()`, `download()`
+- [x] `download_queue.py` — coda thread-safe, concorrenza, stati completi, WebSocket broadcast
+- [x] `settings_manager.py` — persistenza JSON, default, get/update/reset
+- [x] `routes.py` — tutti gli endpoint REST + WebSocket
+- [x] SPA base con tab Download / Coda / Impostazioni
+- [x] Design system dark/light, i18n engine, client API
 - [x] Locale: EN, IT, FR, DE, ES, PT
 
 ---
 
-### 🔲 Phase 2 — Test & Stabilizzazione
-> Verificare che tutto funzioni con URL reali prima di andare avanti.
+### ✅ Phase 2 — Test & Stabilizzazione
+> Verificare e correggere durante lo sviluppo.
 
-- [ ] Test `analyze()` con URL reali: YouTube, Vimeo, SoundCloud, TikTok
-- [ ] Verifica parsing formati: video-only vs audio-only vs combinati
-- [ ] Verifica rilevamento sottotitoli (manuali + auto-generati)
-- [ ] Test download effettivo end-to-end con progress WebSocket
-- [ ] Gestione edge case: video privati, geo-blocked, siti con login
-- [ ] Fix eventuali bug emersi dai test
-- [ ] Verifica UI: i chip formato si selezionano correttamente
-- [ ] Verifica i18n: cambio lingua ricarica tutti i testi
-
----
-
-### 🔲 Phase 3 — UX Polish
-> Rifinire l'esperienza utente prima di aggiungere nuove funzioni.
-
-- [ ] Animazioni su cambio tab (fade/slide)
-- [ ] Transizione fluida su apertura/chiusura result-card
-- [ ] Drag & drop URL nella finestra (evento `drop` sull'input)
-- [ ] Auto-paste: quando la finestra ottiene il focus e gli appunti contengono un URL, pre-compilare l'input
-- [ ] Skeleton loader durante l'analisi (invece del semplice spinner)
-- [ ] Indicatore di connessione WebSocket (online/offline)
-- [ ] Rispetto `prefers-reduced-motion`
-- [ ] Gestione errori più ricca: messaggi diversi per "link non supportato", "video privato", "rate limit", "rete assente"
-- [ ] Keyboard shortcut: `Ctrl/Cmd+V` focalizza e incolla nell'input URL
+- [x] Test `analyze()` con URL reali: YouTube, playlist, video singoli
+- [x] Fix race condition scheduler (`_schedule()` atomico dentro lock)
+- [x] Fix `_DownloadInterrupted(BaseException)` — cattura corretta
+- [x] Fix `_emit_item()` chiamata fuori dal lock (deadlock)
+- [x] Fix `navigator.clipboard` → `window.pywebview.api.get_clipboard()` (Qt WebEngine)
+- [x] Fix `getElementById` invece di `querySelector` per UUID con caratteri speciali
+- [x] `_cleanup_partial_files()` — rimuove `.part`, `.ytdl`, `*.f[0-9]+.*`
+- [x] `ignoreerrors: True` in `analyze()` per playlist con video non disponibili
 
 ---
 
-### 🔲 Phase 4 — Analisi Link (rifinitura)
-> Migliorare la scheda di analisi risultato.
+### ✅ Phase 3 — UX Polish
+> Esperienza utente base.
 
-- [ ] Mostrare il conteggio totale formati disponibili (`12 video · 8 audio`)
-- [ ] Raggruppare i chip video per risoluzione (4K / FHD / HD / SD)
-- [ ] Indicatore visivo sul chip selezionato con dimensione file stimata
-- [ ] Se il video è solo audio (es. SoundCloud), nascondere la sezione video
-- [ ] Link cliccabile al sorgente originale
-- [ ] Mostrare il nome del sito (extractor) con favicon se disponibile
-- [ ] **Selezione container output** (mp4 / mkv / webm) per singolo download — adesso è fisso mp4
+- [x] Dialog custom (sostituisce `confirm()` e `alert()` nativi)
+- [x] Indicatore connessione WebSocket (online/offline) in header
+- [x] Gestione errori: messaggi differenziati per tipo di errore
+- [x] Keyboard: `Ctrl/Cmd+V` pre-incolla nell'input URL
+- [x] Rispetto `prefers-reduced-motion`
 
 ---
 
-### 🔲 Phase 5 — Download Queue (rifinitura)
-> Funzionalità avanzate sulla coda.
+### ✅ Phase 4 — Analisi Link
+> Scheda di analisi risultato completa.
 
-**Controlli per singolo item:**
-- [ ] **Pausa / Riprendi** download singolo
-- [ ] **Retry** manuale su download in errore — con messaggio errore leggibile e bottone visibile
-- [ ] **Annulla** download in corso
-- [ ] Azione "Apri cartella" al completamento (apertura explorer/finder nativo)
-
-**Controlli globali coda:**
-- [ ] **Pausa tutto** — sospende tutti i download attivi
-- [ ] **Riprendi tutto** — riprende tutti i download in pausa
-- [ ] **Annulla tutto** — cancella tutti i pending e interrompe gli attivi
-
-**Gestione errori:**
-- [ ] Messaggio errore completo visibile sull'item (adesso è troncato)
-- [ ] Retry automatico su errore di rete transitorio (max 3 tentativi con backoff)
-- [ ] Distinguere errori recuperabili (rete) da errori permanenti (video rimosso, privato)
-
-**UX coda:**
-- [ ] Riordino drag & drop degli item in coda
-- [ ] Filtro lista per stato: Tutti / In corso / Completati / Errori
-- [ ] Pulizia batch: "Rimuovi completati"
-- [ ] Stima tempo rimanente globale
+- [x] Chip video raggruppati per qualità: **4K / FHD / HD / SD** con etichetta in colonna fissa
+- [x] Chip con `qualità · codec · ext` — layout grid `label | chips`
+- [x] Size hint sul chip selezionato (`~199 MB`)
+- [x] Contatore formati disponibili (`13 formats`, `4 tracks`)
+- [x] Toggle Video / Audio / Sottotitoli (ON/OFF) con ripristino size hint
+- [x] Lista sottotitoli con separazione manuali/auto-generati, selezione lingua
+- [x] Selettore container **MP4 / MKV**
+- [x] Link extractor cliccabile con `↗` (apertura browser nativo)
+- [x] Badge qualità e audio nella result-header
 
 ---
 
-### 🔲 Phase 6 — Gestione Playlist (rifinitura)
-> Migliorare il flusso playlist.
+### ✅ Phase 5 — Download Queue
+> Controllo completo della coda di download.
 
-- [ ] Analisi parallela degli entry (pool di thread configurabile)
-- [ ] Checkbox "Applica stesso formato a tutti"
-- [ ] Selezione formato per singolo video nella lista playlist
-- [ ] Ordinamento colonne nella lista (titolo, durata)
-- [ ] Salvataggio selezione se si chiude e riapre il pannello
-- [ ] Supporto canali YouTube (non solo playlist)
+- [x] **Per item:** pausa / riprendi / annulla / riavvia / apri cartella / apri file / rimuovi
+- [x] **Globali:** Pausa tutto / Riprendi tutto / Pulisci completati / Svuota tutto
+- [x] Bottoni SVG unificati per tutti gli stati
+- [x] `updateDlProgress()` separato da `updateDlItem()` — no vibrazione UI durante download
+- [x] Retry automatico su errore (backoff configurabile)
+- [x] Messaggio errore completo sull'item
+- [x] Counter naming con `prepare_filename()` per file duplicati
 
 ---
 
-### 🔲 Phase 7 — Impostazioni (rifinitura)
+### ✅ Phase 6 — Gestione Playlist
+> Analisi e download di playlist complete.
+
+- [x] Analisi sequenziale di tutti gli entry con progress bar
+- [x] Video non disponibili: badge rosso, checkbox disabilitata, saltati
+- [x] **Selettore globale video** — intersezione `qualità · codec` su tutti i video
+  - Chip viola = disponibile in tutti; chip arancione `X/Y` = parziale
+- [x] **Selettore globale audio** — stessa logica su `bitrate · codec`
+- [x] **Selettore globale sottotitoli** — sezioni *Reali* / *Generati*, nomi lingua via `Intl.DisplayNames`
+- [x] Toggle globale V/A/S — OFF azzera le selezioni per tutti, ri-evaluta stato
+- [x] **Accordion per-entry** — ogni video espandibile mostra: thumbnail, titolo, `durata · extractor · uploader`, badge formato selezionato (live)
+- [x] Body accordion: sezioni Video / Audio / Sottotitoli identiche al singolo video
+- [x] **Stato arancione** per-entry: canale attivo senza selezione → bordo arancione
+- [x] Toggle per-entry V/A/S — disattivare un canale risolve l'arancione per quell'entry
+- [x] **"Add to queue" bloccato** finché almeno un video selezionato ha canali attivi senza selezione
+- [x] Selezione per-entry sovrascrive la globale
+
+---
+
+### ✅ Phase 7 — Impostazioni
 > Completare la pagina impostazioni.
 
-- [ ] Pulsante "Sfoglia" nativo per scegliere la cartella di download
-- [ ] **Rinomina file duplicati con counter** (`_01`, `_02` …) — usa `ydl.prepare_filename(info)` per ottenere il nome esatto che yt-dlp userebbe, evitando il problema della sanitizzazione. Attualmente: `overwrites=True` (sovrascrive).
-- [ ] Template nome file configurabile (es. `%(uploader)s - %(title)s`)
-- [ ] Sezione "Avanzate" nascosta per le opzioni yt-dlp meno comuni
-- [ ] Import/export impostazioni (file JSON)
-- [ ] Profili: salvare preset diversi (es. "Podcast 128kbps" / "Video 1080p")
+- [x] Pulsante **"Sfoglia"** nativo per cartella di download (bridge pywebview)
+- [x] Template nome file con **guida token sempre visibile e cliccabile** (inserisce al cursore)
+- [x] **Counter naming** per file duplicati (`_01`, `_02` …) via `prepare_filename()`
+- [x] Impostazione concorrenza download (1–5 thread), applicata a runtime senza riavvio
+- [x] **Aggiornamento lingua in tempo reale** (senza premere Save)
+- [x] Tema Dark/Light spostato dall'header alla sezione Interface nelle impostazioni
+- [x] **Formato di uscita default** (MP4/MKV) come chip selector
+- [x] **Codec video default** (Any / H.264 / VP9 / AV1 / H.265)
+- [x] **Formato sottotitoli** (SRT / ASS / VTT) — SRT default per compatibilità BluRay/SmartTV
+- [x] Conversione sottotitoli via FFmpeg (`convertsubtitles` in yt-dlp)
+- [x] Layout pagina Config riscritto: sezioni INTERFACE / DOWNLOAD / VIDEO / AUDIO / SUBTITLES / NETWORK a larghezza piena, grid layout
+- [x] Campo ricerca sottotitoli (singolo video + selettore globale playlist)
+- [x] **Accordion V/A/S** nel singolo video e nelle entry playlist — header con badge formato selezionato live
+- [x] **Larghe uniformi sui chip** formato video/audio (colonne fisse 170px / 155px)
+- [x] Icona coniglio ingrandita (30→38px)
+- [x] Pulsanti finestra custom nell'header (Riduci/Ingrandisci/Chiudi via bridge)
+- [ ] **Frame OS personalizzato** — `frameless=True` causa segfault con pywebview+Qt; da investigare
+- [ ] **Revisione layout pagina Config** — ultimi ritocchi spaziatura/allineamento
+- [ ] Sezione "Avanzate" collassabile
+- [ ] Import/export impostazioni (JSON)
+- [ ] Profili preset
 
 ---
 
-### 🔲 Phase 8 — Notifiche & Sistema
+### 🔲 Phase 8 — Output & Conversione (FFmpeg)
+> Scelta container e conversione audio.
+
+- [ ] Selettore container **MP4 / MKV** per-entry nella playlist (già disponibile su singolo video)
+- [ ] **Estrazione audio** con conversione: MP3, AAC, M4A, FLAC, OPUS, OGG
+- [ ] Selezione bitrate: 320 / 256 / 192 / 128 / 96 kbps (o "best")
+- [ ] Usa `FFmpegExtractAudioPP` di yt-dlp — nessuna dipendenza extra
+- [ ] Verifica FFmpeg disponibile sul sistema — messaggio guida se assente
+
+---
+
+### 🔲 Phase 9 — Notifiche & Sistema
 > Integrazione con l'OS.
 
-- [ ] Notifica di sistema nativa al completamento download (pywebview API o `plyer`)
-- [ ] Icona tray su Windows/macOS (minimizzazione in background)
-- [ ] Apertura automatica della cartella di destinazione (opzionale)
-- [ ] Log scaricabile degli errori
+- [ ] Notifica di sistema nativa al completamento download (`plyer` o pywebview API)
+- [ ] Icona tray su Windows/macOS con menu contestuale (minimizza in background)
+- [ ] Apertura automatica cartella di destinazione (opzionale, configurabile)
+- [ ] Log errori scaricabile da UI
 
 ---
 
-### 🔲 Phase 9 — Packaging & Release
-> Preparare la distribuzione.
+### 🔲 Phase 10 — Packaging & Release
+> Distribuzione.
 
-- [ ] Icona app vettoriale (SVG → PNG 512x512)
-- [ ] Build PyInstaller: `--onefile` o `--onedir`
-  - Windows: `.exe` + installer NSIS (opzionale)
+- [ ] Build **PyInstaller**: `--onefile` o `--onedir`
+  - Windows: `.exe` standalone
   - macOS: `.app` bundle
   - Linux: `AppImage` o `tar.gz`
 - [ ] Script di build cross-platform (`build.py`)
-- [ ] Aggiornamento automatico di yt-dlp a runtime (già supportato da yt-dlp)
+- [ ] Aggiornamento automatico yt-dlp a runtime (già supportato da yt-dlp)
 - [ ] README utente finale
 - [ ] CHANGELOG
 - [ ] Prima release `v1.0.0`
@@ -283,16 +274,16 @@ grabbit/
 ## Dipendenze principali
 
 ```
-pywebview>=5.0.5          # Finestra nativa OS
-fastapi>=0.115.0           # Backend web framework
-uvicorn>=0.30.0            # ASGI server
-yt-dlp>=2024.11.18         # Engine download
-websockets>=13.0           # WebSocket support
-aiofiles>=24.1.0           # File I/O async
-pydantic>=2.9.0            # Validazione dati
-python-multipart>=0.0.12   # Form parsing
+pywebview>=5.0.5
+fastapi>=0.115.0
+uvicorn>=0.30.0
+yt-dlp>=2024.11.18
+websockets>=13.0
+aiofiles>=24.1.0
+pydantic>=2.9.0
+python-multipart>=0.0.12
 ```
 
 ---
 
-*Ultimo aggiornamento: Phase 1 completata.*
+*Ultimo aggiornamento: Phase 6 completata.*

@@ -35,8 +35,9 @@
   "subtitles": {
     "none": "Aucun sous-titre",
     "none_option": "Aucun",
-    "manual": "Manuel",
-    "auto": "Généré automatiquement"
+    "manual": "Réels",
+    "auto": "Générés automatiquement",
+    "search_placeholder": "Rechercher une langue…"
   },
   "queue": {
     "empty": "Aucun téléchargement. Analysez une URL pour commencer.",
@@ -106,7 +107,31 @@
     "saved": "Paramètres enregistrés",
     "reset_confirm": "Réinitialiser tous les paramètres ?",
     "reset_done": "Paramètres réinitialisés",
-    "reset_confirm_title": "Réinitialiser"
+    "reset_confirm_title": "Réinitialiser",
+    "browse": "Parcourir",
+    "filename_template": "Modèle de nom de fichier",
+    "filename_template_hint": "Modèle yt-dlp — vide = défaut",
+    "tpl_vars": {
+      "title": "Titre de la vidéo",
+      "uploader": "Nom de la chaîne",
+      "upload_date": "Date de publication (AAAAMMJJ)",
+      "id": "ID vidéo",
+      "ext": "Extension (obligatoire)",
+      "resolution": "Résolution",
+      "playlist_title": "Titre de la playlist",
+      "playlist_index": "Position dans la playlist"
+    },
+    "theme": "Thème",
+    "theme_dark": "Sombre",
+    "theme_light": "Clair",
+    "group_download": "Téléchargement",
+    "output_format": "Format de sortie par défaut",
+    "video_codec": "Codec par défaut",
+    "any_codec": "Quelconque",
+    "sub_format": "Format des sous-titres",
+    "sub_format_hint": "SRT = plus compatible (BluRay, SmartTV)",
+    "tpl_guide_label": "Insérer :",
+    "sub_lang_none": "— Aucune / Quelconque —"
   },
   "common": {
     "cancel": "Annuler",

@@ -11,17 +11,20 @@ _DEFAULTS: dict[str, Any] = {
     "theme": "dark",                    # "dark" | "light"
     "output_dir": str(Path.home() / "Downloads" / "GRABBIT"),
     "max_concurrent": 2,
+    "filename_template": "",             # yt-dlp outtmpl, empty = default %(title)s.%(ext)s
+    "default_output_format": "mp4",     # "mp4" | "mkv"
     # Video
     "default_video_quality": "best",    # "best"|"2160"|"1440"|"1080"|"720"|"576"|"480"|"360"
-    "default_video_ext": "mp4",         # "mp4"|"webm"|"mkv"
+    "default_codec": "",                # "" = any | "avc1" | "vp9" | "av01" | "hevc"
     # Audio
-    "default_audio_quality": "best",    # "best"|"320"|"256"|"192"|"128"|"96"
+    "default_audio_quality": "best",    # "best"|"320"|"256"|"192"|"128"
     "default_audio_ext": "m4a",         # "m4a"|"mp3"|"opus"|"flac"|"wav"
     "default_audio_lang": "",           # ISO 639-1, empty = any
     # Subtitles
     "default_sub_lang": "",             # ISO 639-1, empty = none
     "default_sub_auto": False,          # include auto-generated captions
     "embed_subs": False,                # embed subs in container
+    "subtitle_format": "srt",          # "srt" | "ass" | "vtt" (vtt = no conversion)
     # Network
     "rate_limit": "",                   # e.g. "1M", empty = unlimited
     "cookies_file": "",                 # path to Netscape cookies file

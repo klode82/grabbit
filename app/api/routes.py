@@ -131,6 +131,17 @@ async def add_to_queue(req: QueueAddRequest) -> Any:
         opts["output_dir"] = settings.get("output_dir", ".")
     if "title" not in opts:
         opts["title"] = req.title
+    if "output_template" not in opts:
+        tpl = settings.get("filename_template", "")
+        if tpl:
+            output_dir = opts.get("output_dir", ".")
+            opts["output_template"] = f"{output_dir}/{tpl}"
+    # Inject subtitle format from settings when subtitles are requested
+    if "subtitle_lang" in opts and "subtitle_format" not in opts:
+        opts["subtitle_format"] = settings.get("subtitle_format", "srt")
+    # Use default output format from settings if not explicitly set
+    if "merge_output_format" not in opts:
+        opts["merge_output_format"] = settings.get("default_output_format", "mp4")
 
     item = queue.add(req.url, req.title, opts)
     return item.to_dict()
@@ -216,11 +227,20 @@ async def get_settings() -> Any:
     return settings.get_all()
 
 
+# Sync queue concurrency with saved settings at startup
+queue.max_concurrent = int(settings.get("max_concurrent", 2))
+
+
 @router.post("/settings")
 async def save_settings(patch: dict) -> Any:
-    return settings.update(patch)
+    result = settings.update(patch)
+    if "max_concurrent" in patch:
+        queue.max_concurrent = int(patch.get("max_concurrent", 2))
+    return result
 
 
 @router.post("/settings/reset")
 async def reset_settings() -> Any:
-    return settings.reset()
+    result = settings.reset()
+    queue.max_concurrent = int(result.get("max_concurrent", 2))
+    return result

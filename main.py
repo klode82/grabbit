@@ -92,6 +92,52 @@ class GrabbitAPI:
         await window.pywebview.api.method_name(args)
     """
 
+    def minimize_window(self) -> None:
+        """Minimize the application window."""
+        try:
+            import webview as _wv
+            _wv.windows[0].minimize()
+        except Exception as exc:
+            from app.core.logger import log
+            log.debug("minimize_window: %s", exc)
+
+    def maximize_window(self) -> None:
+        """Maximize / restore the application window."""
+        try:
+            import webview as _wv
+            w = _wv.windows[0]
+            if hasattr(w, 'maximize'):
+                w.maximize()
+            else:
+                w.toggle_fullscreen()
+        except Exception as exc:
+            from app.core.logger import log
+            log.debug("maximize_window: %s", exc)
+
+    def close_window(self) -> None:
+        """Close the application window."""
+        try:
+            import webview as _wv
+            _wv.windows[0].destroy()
+        except Exception as exc:
+            from app.core.logger import log
+            log.debug("close_window: %s", exc)
+
+    def pick_folder(self) -> str:
+        """Open a native folder-picker dialog and return the selected path.
+
+        Returns an empty string if the user cancels or the dialog fails.
+        Uses pywebview's built-in FOLDER_DIALOG so no extra dependency is needed.
+        """
+        try:
+            import webview as _wv
+            result = _wv.windows[0].create_file_dialog(_wv.FOLDER_DIALOG)
+            return result[0] if result else ""
+        except Exception as exc:
+            from app.core.logger import log
+            log.warning("pick_folder failed: %s", exc)
+            return ""
+
     def get_clipboard(self) -> str:
         """Return the current clipboard text, or an empty string on failure.
 

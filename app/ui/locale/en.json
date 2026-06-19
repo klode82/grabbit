@@ -35,8 +35,9 @@
   "subtitles": {
     "none": "No subtitles available",
     "none_option": "None",
-    "manual": "Manual",
-    "auto": "Auto-generated"
+    "manual": "Real",
+    "auto": "Auto-generated",
+    "search_placeholder": "Search language…"
   },
   "queue": {
     "empty": "No downloads yet. Analyze a URL to get started.",
@@ -106,7 +107,31 @@
     "saved": "Settings saved",
     "reset_confirm": "Reset all settings to defaults?",
     "reset_done": "Settings reset to defaults",
-    "reset_confirm_title": "Reset settings"
+    "reset_confirm_title": "Reset settings",
+    "browse": "Browse",
+    "filename_template": "Filename template",
+    "filename_template_hint": "yt-dlp template — empty = default",
+    "tpl_vars": {
+      "title": "Video title",
+      "uploader": "Channel name",
+      "upload_date": "Upload date (YYYYMMDD)",
+      "id": "Video ID",
+      "ext": "Extension (required)",
+      "resolution": "Resolution",
+      "playlist_title": "Playlist title",
+      "playlist_index": "Playlist position"
+    },
+    "theme": "Theme",
+    "theme_dark": "Dark",
+    "theme_light": "Light",
+    "group_download": "Download",
+    "output_format": "Default output format",
+    "video_codec": "Default codec",
+    "any_codec": "Any",
+    "sub_format": "Subtitle output format",
+    "sub_format_hint": "SRT = most compatible (BluRay, SmartTV)",
+    "tpl_guide_label": "Insert:",
+    "sub_lang_none": "— None / Any —"
   },
   "common": {
     "cancel": "Cancel",
