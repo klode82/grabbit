@@ -31,6 +31,12 @@ _event_loop: asyncio.AbstractEventLoop | None = None
 async def websocket_endpoint(ws: WebSocket) -> None:
     await ws.accept()
     _ws_clients.append(ws)
+    # If this is the first client, kick the scheduler so restored PENDING
+    # items start downloading now that there is a listener to receive updates.
+    if len(_ws_clients) == 1 and queue.auto_start:
+        import asyncio as _aio
+        loop = _aio.get_running_loop()
+        loop.run_in_executor(None, queue._schedule)
     # Send current queue state immediately on connect
     try:
         await ws.send_json({"event": "init", "items": queue.get_all(), "stats": queue.stats})
@@ -66,6 +72,9 @@ def _queue_event_handler(payload: dict) -> None:
 
 # Register once at import time
 queue.add_listener(_queue_event_handler)
+
+# Apply auto_start from persisted settings immediately
+queue.auto_start = settings.get("auto_start_downloads", True)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -236,11 +245,14 @@ async def save_settings(patch: dict) -> Any:
     result = settings.update(patch)
     if "max_concurrent" in patch:
         queue.max_concurrent = int(patch.get("max_concurrent", 2))
+    if "auto_start_downloads" in patch:
+        queue.auto_start = bool(patch.get("auto_start_downloads", True))
     return result
 
 
 @router.post("/settings/reset")
 async def reset_settings() -> Any:
     result = settings.reset()
-    queue.max_concurrent = int(result.get("max_concurrent", 2))
+    queue.max_concurrent  = int(result.get("max_concurrent", 2))
+    queue.auto_start      = bool(result.get("auto_start_downloads", True))
     return result

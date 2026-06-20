@@ -197,8 +197,8 @@ grabbit/
 
 ---
 
-### ✅ Phase 7 — Impostazioni
-> Completare la pagina impostazioni.
+### ✅ Phase 7 — Impostazioni & UX Polish
+> Completare la pagina impostazioni e rifinitura UX generale.
 
 - [x] Pulsante **"Sfoglia"** nativo per cartella di download (bridge pywebview)
 - [x] Template nome file con **guida token sempre visibile e cliccabile** (inserisce al cursore)
@@ -208,30 +208,57 @@ grabbit/
 - [x] Tema Dark/Light spostato dall'header alla sezione Interface nelle impostazioni
 - [x] **Formato di uscita default** (MP4/MKV) come chip selector
 - [x] **Codec video default** (Any / H.264 / VP9 / AV1 / H.265)
-- [x] **Formato sottotitoli** (SRT / ASS / VTT) — SRT default per compatibilità BluRay/SmartTV
-- [x] Conversione sottotitoli via FFmpeg (`convertsubtitles` in yt-dlp)
-- [x] Layout pagina Config riscritto: sezioni INTERFACE / DOWNLOAD / VIDEO / AUDIO / SUBTITLES / NETWORK a larghezza piena, grid layout
-- [x] Campo ricerca sottotitoli (singolo video + selettore globale playlist)
+- [x] **Formato sottotitoli** (SRT / ASS / VTT) — SRT default; conversione via `FFmpegSubtitlesConvertorPP`
+- [x] Layout pagina Config riscritto: INTERFACE / DOWNLOAD / VIDEO / AUDIO / SUBTITLES / NETWORK a larghezza piena
+- [x] **Selettore lingua custom** (Audio e Sottotitoli) — dropdown con ricerca, nomi localizzati via `Intl.DisplayNames`, ordinato per locale corrente
+- [x] **Campo ricerca sottotitoli** con pulsante X per cancellare — singolo video, playlist per-entry, selettore globale
 - [x] **Accordion V/A/S** nel singolo video e nelle entry playlist — header con badge formato selezionato live
-- [x] **Larghe uniformi sui chip** formato video/audio (colonne fisse 170px / 155px)
-- [x] Icona coniglio ingrandita (30→38px)
-- [x] Pulsanti finestra custom nell'header (Riduci/Ingrandisci/Chiudi via bridge)
-- [ ] **Frame OS personalizzato** — `frameless=True` causa segfault con pywebview+Qt; da investigare
-- [ ] **Revisione layout pagina Config** — ultimi ritocchi spaziatura/allineamento
-- [ ] Sezione "Avanzate" collassabile
-- [ ] Import/export impostazioni (JSON)
-- [ ] Profili preset
+- [x] **Auto-selezione da impostazioni** all'analisi playlist: video (qualità+codec), audio (codec+bitrate), sottotitoli (lingua)
+- [x] Chip formato uniformi: colonne fisse 170px (video/audio), 155px (chip globali)
+- [x] Separatori verticali tra gruppi qualità (HD/SD/4K) con linea laterale full-height
+- [x] **Toggle OFF** nel bar globale playlist ripristinabile — fix `pointer-events: none` sull'intero accordion
+- [x] **Bar globale disabilitato durante analisi playlist** — classe `analyzing` con opacity + pointer-events none
+- [x] **Highlight sezione con problemi** nell'accordion per-entry — bordo arancione + sfondo + titolo colorato
+- [x] **Orange state sottotitoli coerente** — `sel.subsEnabled` inizializzato da disponibilità reale; toggle e stato arancione sempre allineati
+- [x] Pulsanti finestra custom nell'header (Riduci/Ingrandisci/Chiudi via bridge pywebview)
+- [x] **Logo header unificato** — immagine combinata coniglio+testo, padding asimmetrico compensato
+- [x] Toggle slider visibile in Light Mode (fix colore OFF stato)
+- [x] `select` nativo stilizzato con `font-size` per coerenza con i campi input
+- [x] Bug fix queue: `clear_all()` resetta `is_paused` → nuovi download partono dopo Clear All
+- [x] Bug fix queue: `_emit_item()` non emette per item già rimossi → no badge zombie dopo Clear All
+- [x] **Nomi lingua completi** nella lista sottotitoli (singolo + per-entry) via `langName()` invece del codice grezzo
+- [x] **Badge lingua selezionata** nell'header accordion sottotitoli per-entry
+- [x] Bug fix ricerca sottotitoli singolo video — listener `input` su `#sub-search` rimosso per errore, ripristinato
+- [x] Bug fix ricerca sottotitoli per-entry — `data-lang` mancante sugli elementi, filter non trovava nulla
+- [x] **Codici ANSI rimossi** dalla stringa speed/ETA di yt-dlp (`_speed_str`, `_eta_str`) prima dell'invio al frontend
+- [x] **Embed sottotitoli corretto** — ordine post-processor: converti prima, embeds dopo; fix MKV con traccia sub embedded
 
 ---
 
-### 🔲 Phase 8 — Output & Conversione (FFmpeg)
-> Scelta container e conversione audio.
+### 🚧 Phase 8 — Modal Parametri yt-dlp & Preset
+> Accesso avanzato ai parametri di yt-dlp con sistema di preset salvabili.
 
-- [ ] Selettore container **MP4 / MKV** per-entry nella playlist (già disponibile su singolo video)
-- [ ] **Estrazione audio** con conversione: MP3, AAC, M4A, FLAC, OPUS, OGG
-- [ ] Selezione bitrate: 320 / 256 / 192 / 128 / 96 kbps (o "best")
-- [ ] Usa `FFmpegExtractAudioPP` di yt-dlp — nessuna dipendenza extra
-- [ ] Verifica FFmpeg disponibile sul sistema — messaggio guida se assente
+**Modal parametri**
+- [x] Pulsante **"⚙ Avanzato"** nel footer della result card → apre la modal
+- [x] Layout a navigazione laterale: **menu sezioni a sinistra** → controlli a destra
+- [x] Sezioni implementate: 🌐 Rete · 📦 File & Metadati · 🛡️ SponsorBlock · ⚙️ Comportamento · 🔧 Extra
+- [x] Badge per sezione nel menu laterale mostra numero parametri attivi
+- [x] Badge sul pulsante ⚙ Avanzato mostra totale parametri attivi
+- [x] Parametri applicati passati al download via `extra_params` → `_apply_extra_params()` in backend
+- [x] Pulsante modal equivalente nel **bar globale playlist** → applica a tutti i video selezionati
+
+**Persistenza Queue**
+- [x] Salvataggio queue su disco (JSON) ad ogni modifica: add, complete, cancel, pause
+- [x] Ripristino automatico all'avvio: PENDING e PAUSED ripartono, DOWNLOADING → PENDING, COMPLETED mantenuti come history
+- [x] Gestione file `.part` al riavvio (download interrotti)
+
+**Preset**
+- [x] Input inline nel footer (no `prompt()` di sistema) — nome + Salva + ✕
+- [x] Preset visualizzati come chip nell'header della modal con badge attivo
+- [x] Preset salvati in `settings.json` sotto chiave `presets[]`
+- [x] Caricamento preset pre-popola i controlli della sezione corrente
+- [x] Elimina preset singolarmente (×)
+
 
 ---
 
@@ -246,17 +273,69 @@ grabbit/
 ---
 
 ### 🔲 Phase 10 — Packaging & Release
-> Distribuzione.
+> Prima distribuzione pubblica.
 
 - [ ] Build **PyInstaller**: `--onefile` o `--onedir`
   - Windows: `.exe` standalone
   - macOS: `.app` bundle
   - Linux: `AppImage` o `tar.gz`
 - [ ] Script di build cross-platform (`build.py`)
-- [ ] Aggiornamento automatico yt-dlp a runtime (già supportato da yt-dlp)
+- [ ] Investigare `frameless=True` su Windows (su Linux causa segfault con Qt)
 - [ ] README utente finale
 - [ ] CHANGELOG
 - [ ] Prima release `v1.0.0`
+
+---
+
+### 🔲 Phase 11 — Controllo e Gestione yt-dlp & FFmpeg
+> L'app deve sapere dove sono le dipendenze e guidare l'utente se mancano.
+
+**Rilevamento all'avvio**
+- [ ] Verifica `ffmpeg` e `yt-dlp` nel PATH (o path configurate)
+- [ ] Banner/dialog con istruzioni contestuali se mancanti
+- [ ] Blocco soft se manca FFmpeg (funzioni base ok), blocco hard se manca yt-dlp
+
+**Windows — bundling binari**
+- [ ] Includi nel pacchetto: `ffmpeg.exe` + `ffprobe.exe` + `yt-dlp.exe`
+- [ ] Fallback automatico ai binari bundled se non trovati nel PATH
+- [ ] Override manuale percorso in Settings → Rete
+
+**macOS / Linux — guida installazione**
+- [ ] Istruzioni contestuali per OS:
+  - macOS: `brew install ffmpeg yt-dlp`
+  - Ubuntu/Debian: `sudo apt install ffmpeg` + `pip install yt-dlp`
+  - Arch: `sudo pacman -S ffmpeg yt-dlp`
+
+---
+
+### 🔲 Phase 12 — Controlli Avanzati FFmpeg (Video, Audio, Sottotitoli)
+> Conversione e post-processing FFmpeg accessibile dalla UI.
+
+- [ ] **Singolo video** — sezione dedicata nella result card:
+  - Estrazione audio pura: MP3 / AAC / M4A / FLAC / OPUS con scelta bitrate
+  - Conversione container: MP4 → MKV e viceversa post-download
+  - Sottotitoli: burn-in (hardcode) vs embed vs file separato
+- [ ] **Playlist** — controlli equivalenti nel bar globale (applicati a tutti i video)
+- [ ] Usa `FFmpegExtractAudioPP`, `FFmpegVideoConvertor`, `FFmpegEmbedSubtitlePP` di yt-dlp
+- [ ] Verifica FFmpeg disponibile prima di mostrare le opzioni
+
+---
+
+### 🔲 Phase 13 — Upgrade Package
+> Aggiornamento dell'applicazione e delle sue dipendenze.
+
+- [ ] Check versione GRABBIT all'avvio vs ultima release GitHub
+- [ ] Notifica in-app "Nuova versione disponibile" con link al download
+- [ ] Aggiornamento automatico yt-dlp bundled (`yt-dlp -U`)
+- [ ] Aggiornamento automatico yt-dlp da pip (se installato via pip)
+- [ ] Changelog in-app per ogni release
+
+---
+
+### 🔲 Phase 14 — Dipendenze (TBD)
+> Da definire in base all'evoluzione del progetto dopo Phase 13.
+
+- [ ] *Da definire*
 
 ---
 
@@ -283,7 +362,3 @@ aiofiles>=24.1.0
 pydantic>=2.9.0
 python-multipart>=0.0.12
 ```
-
----
-
-*Ultimo aggiornamento: Phase 6 completata.*

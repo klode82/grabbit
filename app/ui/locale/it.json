@@ -131,7 +131,9 @@
     "sub_format": "Formato sottotitoli",
     "sub_format_hint": "SRT = più compatibile (BluRay, SmartTV)",
     "tpl_guide_label": "Inserisci:",
-    "sub_lang_none": "— Nessuna / Qualsiasi —"
+    "sub_lang_none": "— Nessuna / Qualsiasi —",
+    "auto_start": "Avvia download automaticamente",
+    "auto_start_hint": "Se disattivato, i download restano in attesa finché non premi Resume All"
   },
   "common": {
     "cancel": "Annulla",

@@ -190,6 +190,17 @@
             </div>
           </div>
 
+          <!-- Parametri avanzati yt-dlp — separator + button -->
+          <div class="pl-format-advanced">
+            <button class="btn btn-ghost ytdlp-adv-btn" id="ytdlp-pl-adv-btn"
+                    onclick="openYtdlpModal()"
+                    title="Parametri avanzati yt-dlp — applicati a tutti i video selezionati">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93l-1.41 1.41M4.93 4.93l1.41 1.41M12 2v2M12 20v2M2 12h2M20 12h2M19.07 19.07l-1.41-1.41M4.93 19.07l1.41-1.41"/></svg>
+              Avanzato
+              <span class="ytdlp-adv-badge" id="ytdlp-pl-adv-badge">0</span>
+            </button>
+          </div>
+
         </div>
 
         <div style="display:flex;gap:8px;margin-bottom:10px">
@@ -300,6 +311,11 @@
         <!-- Footer actions -->
         <div class="result-footer">
           <button class="btn btn-ghost" onclick="resetResult()" data-i18n="common.cancel">Cancel</button>
+          <button class="btn btn-ghost ytdlp-adv-btn" id="ytdlp-adv-btn" onclick="openYtdlpModal()" title="Parametri avanzati yt-dlp">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93l-1.41 1.41M4.93 4.93l1.41 1.41M12 2v2M12 20v2M2 12h2M20 12h2M19.07 19.07l-1.41-1.41M4.93 19.07l1.41-1.41"/></svg>
+            Avanzato
+            <span class="ytdlp-adv-badge" id="ytdlp-adv-badge">0</span>
+          </button>
           <button class="btn btn-primary" id="add-queue-btn">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
             <span data-i18n="download.add_queue">Add to queue</span>
@@ -439,6 +455,18 @@
               <button class="format-chip" data-val="mp4">MP4</button>
               <button class="format-chip" data-val="mkv">MKV</button>
             </div>
+          </div>
+
+          <!-- Row 4: auto-start -->
+          <div class="settings-field settings-toggle-row">
+            <div>
+              <div class="settings-label" data-i18n="settings.auto_start">Avvia download automaticamente</div>
+              <div class="settings-hint" data-i18n="settings.auto_start_hint">Se disattivato, i download restano in attesa finché non premi Resume All</div>
+            </div>
+            <label class="toggle">
+              <input type="checkbox" id="s-auto-start">
+              <span class="toggle-slider"></span>
+            </label>
           </div>
         </div>
 
@@ -621,5 +649,54 @@
 <script src="/static/js/i18n.js"></script>
 <script src="/static/js/api.js"></script>
 <script src="/static/js/app.js"></script>
+  <!-- ── yt-dlp Advanced Parameters Modal ───────────────────────────────── -->
+  <div class="modal-overlay" id="ytdlp-modal">
+    <div class="modal-card ytdlp-modal">
+
+      <div class="modal-header">
+        <div class="modal-header-info">
+          <h3 class="modal-title">Parametri avanzati yt-dlp</h3>
+          <p class="modal-subtitle">Sovrascrivono le impostazioni globali per questo download</p>
+        </div>
+        <div class="modal-presets-bar" id="modal-presets-bar"></div>
+        <button class="modal-close-btn" onclick="closeYtdlpModal()">
+          <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="1" y1="1" x2="12" y2="12"/><line x1="12" y1="1" x2="1" y2="12"/></svg>
+        </button>
+      </div>
+
+      <div class="ytdlp-modal-body">
+        <!-- Left: section navigation -->
+        <div class="ytdlp-section-nav" id="ytdlp-section-nav"></div>
+        <!-- Right: controls for selected section -->
+        <div class="ytdlp-section-content" id="ytdlp-section-content"></div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-ghost btn-sm" onclick="resetYtdlpModal()">Azzera tutto</button>
+        <div class="modal-footer-actions">
+          <!-- Preset save: inline input shown on click -->
+          <div class="preset-save-wrap" id="preset-save-wrap">
+            <button class="btn btn-ghost btn-sm" id="preset-save-trigger"
+                    onclick="showPresetInput()">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17,21 17,13 7,13 7,21"/><polyline points="7,3 7,8 15,8"/></svg>
+              Salva preset
+            </button>
+            <div class="preset-save-input-row" id="preset-save-input-row" style="display:none">
+              <input type="text" class="input" id="preset-name-input"
+                     placeholder="Nome preset…"
+                     onkeydown="onPresetInputKey(event)"
+                     maxlength="32">
+              <button class="btn btn-primary btn-sm" onclick="confirmSavePreset()">Salva</button>
+              <button class="btn btn-ghost btn-sm" onclick="hidePresetInput()">✕</button>
+            </div>
+          </div>
+          <button class="btn btn-ghost btn-sm" onclick="closeYtdlpModal()">Annulla</button>
+          <button class="btn btn-primary btn-sm" onclick="applyYtdlpModal()">Applica</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
 </body>
 </html>

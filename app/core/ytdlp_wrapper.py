@@ -18,6 +18,83 @@ def _strip_ansi(s: str) -> str:
     return _ANSI_RE.sub('', s or '')
 
 
+def _apply_extra_params(ydl_opts: dict, extra: dict) -> None:
+    """Map the advanced-modal extra_params dict onto yt-dlp ydl_opts."""
+    if not extra:
+        return
+
+    def _parse_rate(s: str):
+        s = (s or '').strip().upper()
+        try:
+            if s.endswith('G'): return int(float(s[:-1]) * 1024 ** 3)
+            if s.endswith('M'): return int(float(s[:-1]) * 1024 ** 2)
+            if s.endswith('K'): return int(float(s[:-1]) * 1024)
+            return int(s)
+        except (ValueError, TypeError):
+            return None
+
+    def _int(v):
+        try: return int(v)
+        except (ValueError, TypeError): return None
+
+    # ── Network ──────────────────────────────────────────────────────────────
+    if extra.get('ratelimit'):
+        r = _parse_rate(extra['ratelimit'])
+        if r: ydl_opts['ratelimit'] = r
+    if extra.get('retries') not in (None, ''):
+        v = _int(extra['retries'])
+        if v is not None: ydl_opts['retries'] = v
+    if extra.get('proxy'):
+        ydl_opts['proxy'] = extra['proxy']
+    if extra.get('socket_timeout') not in (None, ''):
+        v = _int(extra['socket_timeout'])
+        if v is not None: ydl_opts['socket_timeout'] = v
+    if extra.get('sleep_interval') not in (None, ''):
+        v = _int(extra['sleep_interval'])
+        if v is not None:
+            ydl_opts['sleep_interval'] = v
+            ydl_opts['max_sleep_interval'] = v
+    if extra.get('geo_bypass'):
+        ydl_opts['geo_bypass'] = True
+        country = (extra.get('geo_bypass_country') or '').strip().upper()[:2]
+        if country: ydl_opts['geo_bypass_country'] = country
+
+    # ── File & Metadata ───────────────────────────────────────────────────────
+    if extra.get('writethumbnail'):
+        ydl_opts['writethumbnail'] = True
+    if extra.get('embedthumbnail') and extra.get('writethumbnail'):
+        ydl_opts['embedthumbnail'] = True
+        # yt-dlp adds EmbedThumbnailPP automatically when embedthumbnail=True
+    if extra.get('writedescription'):
+        ydl_opts['writedescription'] = True
+    if extra.get('writeinfojson'):
+        ydl_opts['writeinfojson'] = True
+    if extra.get('addmetadata'):
+        ydl_opts['addmetadata'] = True
+        # yt-dlp adds FFmpegMetadataPP automatically when addmetadata=True
+    if extra.get('embedchapters'):
+        ydl_opts['embedchapters'] = True
+
+    # ── SponsorBlock ──────────────────────────────────────────────────────────
+    sb_remove = extra.get('sponsorblock_remove') or []
+    if sb_remove:
+        ydl_opts['sponsorblock_remove'] = sb_remove
+
+    # ── Behaviour ─────────────────────────────────────────────────────────────
+    if extra.get('no_overwrites'):
+        ydl_opts['nooverwrites'] = True
+    if extra.get('prefer_free_formats'):
+        ydl_opts['prefer_free_formats'] = True
+    if extra.get('keepvideo'):
+        ydl_opts['keepvideo'] = True
+
+    # ── HTTP ──────────────────────────────────────────────────────────────────
+    if extra.get('user_agent'):
+        ydl_opts.setdefault('http_headers', {})['User-Agent'] = extra['user_agent']
+    if extra.get('referer'):
+        ydl_opts.setdefault('http_headers', {})['Referer'] = extra['referer']
+
+
 class _DownloadInterrupted(BaseException):
     """Raised inside the yt-dlp progress hook to interrupt a download.
 
@@ -462,6 +539,22 @@ class YTDLPWrapper:
 
         if options.get("cookies_file"):
             ydl_opts["cookiefile"] = options["cookies_file"]
+
+        # Apply advanced modal params (override / extend any already-set opts)
+        extra = options.get("extra_params") or {}
+        if extra:
+            log.info("[GRABBIT] extra_params ricevuti dalla modal: %s", extra)
+        _apply_extra_params(ydl_opts, extra)
+
+        # Log final yt-dlp options for verification (exclude verbose/internal keys)
+        _SKIP = {'outtmpl', 'progress_hooks', 'logger', 'postprocessors', 'http_headers'}
+        loggable = {k: v for k, v in ydl_opts.items() if k not in _SKIP}
+        log.info("[GRABBIT] ydl_opts finali → %s", loggable)
+        if 'postprocessors' in ydl_opts:
+            log.info("[GRABBIT] postprocessors → %s",
+                     [pp.get('key') for pp in ydl_opts['postprocessors']])
+        if 'http_headers' in ydl_opts:
+            log.info("[GRABBIT] http_headers → %s", list(ydl_opts['http_headers'].keys()))
 
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             ydl.download([url])

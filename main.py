@@ -102,26 +102,27 @@ class GrabbitAPI:
             log.debug("minimize_window: %s", exc)
 
     def maximize_window(self) -> None:
-        """Maximize / restore the application window."""
+        """Toggle maximize / restore the application window."""
         try:
-            import webview as _wv
-            w = _wv.windows[0]
-            if hasattr(w, 'maximize'):
-                w.maximize()
-            else:
-                w.toggle_fullscreen()
+            from PySide6.QtWidgets import QApplication, QMainWindow
+            app = QApplication.instance()
+            if not app:
+                return
+            for w in app.topLevelWidgets():
+                if isinstance(w, QMainWindow) and w.isVisible():
+                    if w.isMaximized():
+                        w.showNormal()
+                    else:
+                        w.showMaximized()
+                    return
         except Exception as exc:
             from app.core.logger import log
             log.debug("maximize_window: %s", exc)
 
     def close_window(self) -> None:
-        """Close the application window."""
-        try:
-            import webview as _wv
-            _wv.windows[0].destroy()
-        except Exception as exc:
-            from app.core.logger import log
-            log.debug("close_window: %s", exc)
+        """Terminate the application immediately."""
+        import os
+        os._exit(0)
 
     def pick_folder(self) -> str:
         """Open a native folder-picker dialog and return the selected path.
@@ -260,7 +261,7 @@ def main() -> None:
         if gui_backend == "qt":
             try:
                 from PySide6.QtWidgets import QApplication
-                from PySide6.QtCore import QTimer
+                from PySide6.QtCore import QTimer, Qt
                 from PySide6.QtGui import QIcon
 
                 def _apply() -> None:
@@ -268,15 +269,65 @@ def main() -> None:
                     if app:
                         icon = QIcon(str(_icon_png))
                         app.setWindowIcon(icon)
-                        # Also set on all existing top-level windows
                         for w in app.topLevelWidgets():
                             w.setWindowIcon(icon)
 
-                QTimer.singleShot(0, _apply)
+                def _apply_frameless() -> None:
+                    """Remove OS title bar after WebEngine is fully initialised."""
+                    try:
+                        from PySide6.QtWidgets import QMainWindow
+                        app = QApplication.instance()
+                        if not app:
+                            print("[GRABBIT] frameless: no QApplication", file=sys.stderr)
+                            return
+                        widgets = app.topLevelWidgets()
+                        print(f"[GRABBIT] frameless: {len(widgets)} top-level widget(s)", file=sys.stderr)
+                        for w in widgets:
+                            print(f"[GRABBIT] frameless:   {type(w).__name__} vis={w.isVisible()} {w.width()}x{w.height()}", file=sys.stderr)
+
+                        # Prefer QMainWindow; fallback to largest visible widget
+                        target = None
+                        for w in widgets:
+                            if isinstance(w, QMainWindow) and w.isVisible():
+                                target = w
+                                break
+                        if target is None:
+                            candidates = [w for w in widgets if w.isVisible() and w.width() > 400]
+                            if candidates:
+                                target = max(candidates, key=lambda w: w.width() * w.height())
+
+                        if target is None:
+                            print("[GRABBIT] frameless: no suitable window found — retrying in 1s", file=sys.stderr)
+                            QTimer.singleShot(1000, _apply_frameless)
+                            return
+
+                        pos = target.pos()
+                        target.setWindowFlag(Qt.WindowType.FramelessWindowHint, True)
+                        target.show()
+                        target.move(pos)
+                        print(f"[GRABBIT] frameless: OK on {type(target).__name__}", file=sys.stderr)
+
+                    except Exception as exc:
+                        import traceback
+                        print(f"[GRABBIT] frameless error: {exc}", file=sys.stderr)
+                        traceback.print_exc(file=sys.stderr)
+
+                app = QApplication.instance()
+                # Both timers use the 3-arg form so their callbacks run on the
+                # GUI thread. The frameless timer (1500ms) MUST be created on
+                # the GUI thread too — so we chain it inside _apply_after which
+                # itself runs immediately (0ms) on the GUI thread.
+                def _apply_then_schedule_frameless() -> None:
+                    _apply()
+                    # Now we're on the GUI thread: create the 1500ms timer here
+                    QTimer.singleShot(0,   app, _apply_frameless)
+
+                QTimer.singleShot(0, app, _apply_then_schedule_frameless)
+
             except Exception as exc:
                 print(f"[GRABBIT] Could not set icon (Qt): {exc}", file=sys.stderr)
-        # macOS: icon is embedded in the .app bundle at packaging time (Phase 9)
-        # Windows: icon is embedded in the .exe by PyInstaller (Phase 9)
+        # macOS: icon is embedded in the .app bundle at packaging time (Phase 10)
+        # Windows: icon is embedded in the .exe by PyInstaller (Phase 10)
 
     # Pass the detected backend explicitly so pywebview skips failed attempts.
     # gui=None on macOS/Windows means "use the platform default".

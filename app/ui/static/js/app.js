@@ -548,6 +548,11 @@ async function addCurrentToQueue() {
     options.embed_subs    = State.settings.embed_subs;
   }
 
+  // Attach advanced modal params (if any were applied)
+  if (ModalState.activeCount > 0) {
+    options.extra_params = ModalState.applied;
+  }
+
   try {
     await API.addToQueue(result.webpage_url, result.title, options);
     toast(I18N.t('queue.added'), 'success');
@@ -1851,6 +1856,8 @@ async function addPlaylistToQueue() {
       opts.subtitle_auto = sel.subs.auto;
       opts.embed_subs    = State.settings.embed_subs;
     }
+    // Advanced modal params — same for all videos in the playlist
+    if (ModalState.activeCount > 0) opts.extra_params = ModalState.applied;
     try { await API.addToQueue(entry.webpage_url, entry.title, opts); } catch {}
   }
 
@@ -1986,8 +1993,9 @@ function renderSettings() {
   set('s-rate-limit',   s.rate_limit);
   set('s-cookies',      s.cookies_file);
   set('s-proxy',        s.proxy);
-  setChk('s-sub-auto',  s.default_sub_auto);
-  setChk('s-embed-subs',s.embed_subs);
+  setChk('s-sub-auto',   s.default_sub_auto);
+  setChk('s-embed-subs', s.embed_subs);
+  setChk('s-auto-start', s.auto_start_downloads !== false);
 
   // Chip selectors
   setChipSel('theme-chip-row',      s.theme,                 'data-theme');
@@ -2016,7 +2024,8 @@ async function saveSettingsFromForm() {
     embed_subs:            chk('s-embed-subs'),
     subtitle_format:       getChipSel('sub-format-chips') ?? 'srt',
     theme:                 getChipSel('theme-chip-row', 'data-theme') ?? 'dark',
-    max_concurrent:        parseInt(val('s-max-dl')) || 2,
+    max_concurrent:         parseInt(val('s-max-dl')) || 2,
+    auto_start_downloads:   chk('s-auto-start'),
     rate_limit:            val('s-rate-limit'),
     cookies_file:          val('s-cookies'),
     proxy:                 val('s-proxy'),
@@ -2084,6 +2093,344 @@ function initWebSocket() {
   });
 }
 
+/* ══════════════════════════════════════════════════════════════════════════
+   yt-dlp Advanced Parameters Modal — Phase 8
+   ══════════════════════════════════════════════════════════════════════════ */
+
+const PARAM_GROUPS = [
+  { id: 'network', label: '🌐 Rete', params: [
+    { id: 'ratelimit',          type: 'text',   label: 'Rate limit',           ph: '1M · 500K · 100K', hint: 'Velocità massima download (es: 1M, 500K)' },
+    { id: 'retries',            type: 'number', label: 'Tentativi',            ph: '10', min: 1, max: 100 },
+    { id: 'socket_timeout',     type: 'number', label: 'Timeout socket (sec)', ph: '30' },
+    { id: 'sleep_interval',     type: 'number', label: 'Sleep richieste (sec)',ph: '0', min: 0 },
+    { id: 'proxy',              type: 'text',   label: 'Proxy',                ph: 'socks5://127.0.0.1:1080' },
+    { id: 'geo_bypass',         type: 'check',  label: 'Geo-bypass' },
+    { id: 'geo_bypass_country', type: 'text',   label: 'Paese geo-bypass (ISO 2)', ph: 'IT', maxlen: 2, dep: 'geo_bypass' },
+  ]},
+  { id: 'metadata', label: '📦 File & Metadati', params: [
+    { id: 'writethumbnail',   type: 'check', label: 'Scrivi miniatura (file .jpg separato)' },
+    { id: 'embedthumbnail',   type: 'check', label: 'Incorpora miniatura nel file', dep: 'writethumbnail' },
+    { id: 'writedescription', type: 'check', label: 'Scrivi descrizione (.description)' },
+    { id: 'writeinfojson',    type: 'check', label: 'Scrivi info JSON (.info.json)' },
+    { id: 'addmetadata',      type: 'check', label: 'Aggiungi metadati ID3 / MP4' },
+    { id: 'embedchapters',    type: 'check', label: 'Incorpora capitoli nel file' },
+  ]},
+  { id: 'sponsorblock', label: '🛡️ SponsorBlock', params: [
+    { id: 'sponsorblock_remove', type: 'chips', label: 'Rimuovi segmenti', opts: [
+      { v: 'sponsor',        l: 'Sponsor'     },
+      { v: 'intro',          l: 'Intro'       },
+      { v: 'outro',          l: 'Outro'       },
+      { v: 'selfpromo',      l: 'Auto-promo'  },
+      { v: 'interaction',    l: 'Interazione' },
+      { v: 'preview',        l: 'Preview'     },
+      { v: 'music_offtopic', l: 'Off-topic'   },
+      { v: 'filler',         l: 'Filler'      },
+    ]},
+  ]},
+  { id: 'behavior', label: '⚙️ Comportamento', params: [
+    { id: 'no_overwrites',       type: 'check', label: 'Non sovrascrivere file esistenti' },
+    { id: 'prefer_free_formats', type: 'check', label: 'Preferisci formati liberi (webm/opus)' },
+    { id: 'keepvideo',           type: 'check', label: 'Mantieni video dopo post-processing' },
+  ]},
+  { id: 'extra', label: '🔧 Extra', params: [
+    { id: 'user_agent', type: 'text', label: 'User-Agent', ph: 'Mozilla/5.0…' },
+    { id: 'referer',    type: 'text', label: 'Referer',    ph: 'https://...'  },
+  ]},
+];
+
+const YTDLP_REF = [
+  { f: '--concurrent-fragments N',    d: 'Scarica N frammenti DASH/HLS in parallelo' },
+  { f: '--playlist-items SPEC',        d: 'Voci playlist da scaricare (es: 1,3,5-8)' },
+  { f: '--match-filter FILTER',        d: 'Filtra video per campo (es: duration < 600)' },
+  { f: '--max-downloads N',            d: 'Numero massimo download per sessione' },
+  { f: '--max-filesize SIZE',          d: 'Dimensione massima file (es: 100M, 1G)' },
+  { f: '--min-filesize SIZE',          d: 'Dimensione minima file (es: 10M)' },
+  { f: '--date YYYYMMDD',              d: 'Solo video caricati in questa data' },
+  { f: '--datebefore DATE',            d: 'Solo video caricati prima di questa data' },
+  { f: '--dateafter DATE',             d: 'Solo video caricati dopo questa data' },
+  { f: '--break-on-existing',          d: 'Interrompi playlist se trova file già esistente' },
+  { f: '--no-check-certificates',      d: 'Ignora errori certificato SSL' },
+  { f: '--cookies-from-browser NAME',  d: 'Leggi cookie da browser (chrome, firefox…)' },
+  { f: '--download-archive FILE',      d: 'File archivio per saltare video già scaricati' },
+  { f: '--extract-flat',               d: 'Solo metadati playlist, non scaricare video' },
+  { f: '--split-chapters',             d: 'Dividi video in file separati per capitolo' },
+  { f: '--remove-chapters REGEX',      d: 'Rimuovi capitoli che matchano la regex' },
+  { f: '--force-keyframes-at-cuts',    d: 'Keyframe precisi ai punti di taglio capitoli' },
+  { f: '--convert-thumbnails FORMAT',  d: 'Converti miniatura (jpg / png / webp)' },
+  { f: '--ffmpeg-location PATH',       d: 'Percorso personalizzato eseguibile FFmpeg' },
+  { f: '--exec CMD',                   d: 'Esegui comando dopo download ({} = percorso file)' },
+  { f: '--windows-filenames',          d: 'Forza nomi file compatibili Windows' },
+  { f: '--restrict-filenames',         d: 'Usa solo caratteri ASCII nel nome file' },
+  { f: '--trim-filenames N',           d: 'Tronca il nome file a N caratteri' },
+  { f: '--fragment-retries N',         d: 'Tentativi per singolo frammento HLS/DASH' },
+  { f: '--skip-unavailable-fragments', d: 'Salta frammenti non disponibili' },
+  { f: '--fixup POLICY',               d: 'Fix metadati: never/warn/detect_or_warn/fix' },
+  { f: '--add-headers FIELD:VALUE',    d: 'Aggiungi header HTTP personalizzati' },
+  { f: '--sponsorblock-mark CATS',     d: 'Marca categorie SponsorBlock come capitoli' },
+  { f: '--format-sort FIELDS',         d: 'Preferenza formati (es: res,ext:mp4:m4a,+size)' },
+  { f: '--check-formats',              d: 'Verifica disponibilità formato prima download' },
+  { f: '--source-address IP',          d: 'Indirizzo IP locale per le connessioni' },
+  { f: '--force-ipv4',                 d: 'Forza connessioni IPv4' },
+  { f: '--force-ipv6',                 d: 'Forza connessioni IPv6' },
+  { f: '--hls-use-mpegts',             d: 'Usa MPEGTS per contenitori HLS (utile per live)' },
+  { f: '--mtime',                      d: 'Imposta data file da Last-Modified del server' },
+  { f: '--no-part',                    d: 'Non creare file .part durante il download' },
+  { f: '--write-link',                 d: 'Scrivi URL sorgente in file separato' },
+  { f: '--print FIELD',                d: 'Stampa campo specifico (es: id, title, url)' },
+];
+
+/* Modal runtime state */
+const ModalState = {
+  params:      {},
+  applied:     {},
+  activePreset: null,
+  get activeCount() {
+    return Object.entries(this.applied).filter(([, v]) =>
+      Array.isArray(v) ? v.length > 0 : (typeof v === 'boolean' ? v : v !== null && v !== undefined && v !== '')
+    ).length;
+  },
+};
+
+function initYtdlpModal() {
+  // Build left navigation
+  const nav = qs('#ytdlp-section-nav');
+  if (!nav) return;
+  nav.innerHTML = PARAM_GROUPS.map((g, i) => `
+    <button class="ytdlp-nav-btn${i === 0 ? ' active' : ''}"
+            id="ytdlp-nav-${g.id}"
+            onclick="selectYtdlpSection('${g.id}')">
+      ${g.label}
+      <span class="ytdlp-nav-badge" id="ytdlp-nav-badge-${g.id}"></span>
+    </button>`).join('');
+
+  // Show first section
+  selectYtdlpSection(PARAM_GROUPS[0].id);
+
+  // Close on overlay click
+  qs('#ytdlp-modal')?.addEventListener('click', e => {
+    if (e.target.id === 'ytdlp-modal') closeYtdlpModal();
+  });
+}
+
+function selectYtdlpSection(id) {
+  // Update nav active state
+  qsa('.ytdlp-nav-btn').forEach(b => b.classList.toggle('active', b.id === `ytdlp-nav-${id}`));
+
+  // Render the section content
+  const group   = PARAM_GROUPS.find(g => g.id === id);
+  const content = qs('#ytdlp-section-content');
+  if (!group || !content) return;
+  content.innerHTML = `
+    <div class="ytdlp-section-title">${group.label}</div>
+    ${group.params.map(_buildParamRow).join('')}`;
+
+  // Re-sync controls for this section from current ModalState.params
+  group.params.forEach(p => {
+    const v  = ModalState.params[p.id];
+    const el = qs(`#mp-${p.id}`);
+    if (!el) return;
+    if (p.type === 'check') {
+      el.checked = !!v;
+    } else if (p.type === 'text' || p.type === 'number') {
+      el.value = v || '';
+    } else if (p.type === 'chips') {
+      const sel = Array.isArray(v) ? v : [];
+      qsa(`#mp-${p.id} .format-chip`).forEach(c =>
+        c.classList.toggle('selected', sel.includes(c.dataset.val)));
+    }
+  });
+  _refreshDeps();
+}
+
+function _buildParamRow(p) {
+  let ctrl = '';
+  if (p.type === 'check') {
+    ctrl = `<label class="toggle toggle-sm" style="margin-left:auto">
+      <input type="checkbox" id="mp-${p.id}" onchange="onMpChange('${p.id}',this.checked)">
+      <span class="toggle-slider"></span></label>`;
+  } else if (p.type === 'text') {
+    ctrl = `<input type="text" class="input" id="mp-${p.id}" placeholder="${p.ph || ''}"
+      ${p.maxlen ? `maxlength="${p.maxlen}"` : ''}
+      oninput="onMpChange('${p.id}',this.value)">`;
+  } else if (p.type === 'number') {
+    ctrl = `<input type="number" class="input" id="mp-${p.id}" placeholder="${p.ph || ''}"
+      ${p.min !== undefined ? `min="${p.min}"` : ''}
+      ${p.max !== undefined ? `max="${p.max}"` : ''}
+      oninput="onMpChange('${p.id}',this.value)">`;
+  } else if (p.type === 'chips') {
+    ctrl = `<div class="multichip-wrap" id="mp-${p.id}">
+      ${(p.opts||[]).map(o =>
+        `<button class="format-chip" data-val="${o.v}"
+          onclick="toggleMpChip('${p.id}','${o.v}',this)">${o.l}</button>`
+      ).join('')}</div>`;
+  }
+  const hint    = p.hint ? `<span class="param-hint" title="${p.hint}">ℹ</span>` : '';
+  const depAttr = p.dep  ? `data-dep="${p.dep}"` : '';
+  return `<div class="param-row${p.type==='chips'?' wide':''}" id="mpr-${p.id}" ${depAttr}>
+    <span class="param-label">${p.label}${hint}</span>
+    <div class="param-control">${ctrl}</div></div>`;
+}
+
+function openYtdlpModal() {
+  ModalState.params = { ...ModalState.applied };
+  _syncModalControls();
+  _renderModalPresets();
+  qs('#ytdlp-modal').classList.add('open');
+}
+function closeYtdlpModal() {
+  hidePresetInput();
+  qs('#ytdlp-modal').classList.remove('open');
+}
+
+function applyYtdlpModal() {
+  ModalState.applied    = _readModalControls();
+  closeYtdlpModal();
+  _updateYtdlpBadge();
+}
+function resetYtdlpModal() {
+  ModalState.params      = {};
+  ModalState.activePreset = null;
+  _syncModalControls();
+  _renderModalPresets();
+}
+
+function _readModalControls() {
+  // Sync the CURRENT visible section from DOM → ModalState.params
+  // (the other sections are already in state via onMpChange)
+  const activeId = qs('.ytdlp-nav-btn.active')?.id?.replace('ytdlp-nav-', '');
+  const group    = PARAM_GROUPS.find(g => g.id === activeId);
+  if (group) {
+    group.params.forEach(p => {
+      const el = qs(`#mp-${p.id}`);
+      if (!el) return;
+      if (p.type === 'check') {
+        ModalState.params[p.id] = el.checked;
+      } else if (p.type === 'text' || p.type === 'number') {
+        ModalState.params[p.id] = el.value.trim();
+      } else if (p.type === 'chips') {
+        ModalState.params[p.id] = qsa(`#mp-${p.id} .format-chip.selected`).map(c => c.dataset.val);
+      }
+    });
+  }
+  // Return only meaningful (non-default) values from the full state
+  const out = {};
+  Object.entries(ModalState.params).forEach(([k, v]) => {
+    if (Array.isArray(v) && v.length)             out[k] = v;
+    else if (typeof v === 'boolean' && v)          out[k] = v;
+    else if (typeof v === 'string' && v.trim())    out[k] = v.trim();
+  });
+  return out;
+}
+
+function _syncModalControls() {
+  // Re-render current active section with updated params
+  const activeNav = qs('.ytdlp-nav-btn.active');
+  const activeId  = activeNav?.id?.replace('ytdlp-nav-', '');
+  if (activeId) selectYtdlpSection(activeId);
+  _updateSectionBadges();
+  _refreshDeps();
+}
+
+function _updateSectionBadges() {
+  PARAM_GROUPS.forEach(g => {
+    const count = g.params.filter(p => {
+      const v = ModalState.params[p.id];
+      return Array.isArray(v) ? v.length > 0 : (typeof v === 'boolean' ? v : !!v);
+    }).length;
+    const badge = qs(`#ytdlp-nav-badge-${g.id}`);
+    if (badge) {
+      badge.textContent = count;
+      badge.classList.toggle('visible', count > 0);
+    }
+  });
+}
+
+function onMpChange(id, value) { ModalState.params[id] = value; _refreshDeps(); }
+function toggleMpChip(pid, v, btn) {
+  btn.classList.toggle('selected');
+  ModalState.params[pid] = qsa(`#mp-${pid} .format-chip.selected`).map(c => c.dataset.val);
+}
+function _refreshDeps() {
+  qsa('[data-dep]').forEach(row => {
+    const dep = row.dataset.dep;
+    const el  = qs(`#mp-${dep}`);
+    const on  = el?.type === 'checkbox' ? el.checked : !!el?.value;
+    row.classList.toggle('disabled', !on);
+  });
+}
+function _updateYtdlpBadge() {
+  const n = ModalState.activeCount;
+  [qs('#ytdlp-adv-badge'), qs('#ytdlp-pl-adv-badge')].forEach(badge => {
+    if (!badge) return;
+    badge.textContent = n;
+    badge.classList.toggle('active', n > 0);
+  });
+  _updateSectionBadges();
+}
+
+/* Presets */
+function _renderModalPresets() {
+  const bar = qs('#modal-presets-bar');
+  if (!bar) return;
+  const presets = State.settings.presets || [];
+  if (!presets.length) {
+    bar.innerHTML = '<span style="font-size:11px;color:var(--text-3);padding:0 4px">Nessun preset</span>';
+    return;
+  }
+  bar.innerHTML = presets.map((p, i) => `
+    <div class="preset-chip ${ModalState.activePreset === p.name ? 'active' : ''}"
+         onclick="loadYtdlpPreset(${i})">
+      ${p.name}
+      <button class="preset-del" onclick="event.stopPropagation();deleteYtdlpPreset(${i})" title="Elimina">×</button>
+    </div>`).join('');
+}
+function showPresetInput() {
+  qs('#preset-save-trigger').style.display  = 'none';
+  qs('#preset-save-input-row').style.display = 'flex';
+  const inp = qs('#preset-name-input');
+  inp.value = '';
+  inp.focus();
+}
+function hidePresetInput() {
+  qs('#preset-save-trigger').style.display   = '';
+  qs('#preset-save-input-row').style.display = 'none';
+}
+function onPresetInputKey(e) {
+  if (e.key === 'Enter') confirmSavePreset();
+  if (e.key === 'Escape') hidePresetInput();
+}
+async function confirmSavePreset() {
+  const name = qs('#preset-name-input')?.value.trim();
+  if (!name) return;
+  hidePresetInput();
+  const params  = _readModalControls();
+  const presets = [...(State.settings.presets || [])];
+  const idx     = presets.findIndex(p => p.name === name);
+  if (idx >= 0) presets[idx] = { name, params };
+  else          presets.push({ name, params });
+  State.settings.presets  = presets;
+  await API.saveSettings({ presets });
+  ModalState.activePreset = name;
+  _renderModalPresets();
+  toast('Preset salvato', 'success');
+}
+function loadYtdlpPreset(idx) {
+  const p = (State.settings.presets || [])[idx];
+  if (!p) return;
+  ModalState.params      = { ...p.params };
+  ModalState.activePreset = p.name;
+  _syncModalControls();
+  _renderModalPresets();
+}
+async function deleteYtdlpPreset(idx) {
+  const presets = [...(State.settings.presets || [])];
+  const del     = presets.splice(idx, 1)[0];
+  State.settings.presets = presets;
+  await API.saveSettings({ presets });
+  if (ModalState.activePreset === del?.name) ModalState.activePreset = null;
+  _renderModalPresets();
+}
+
 /* ── Boot ──────────────────────────────────────────────────────────────────── */
 document.addEventListener('DOMContentLoaded', async () => {
   // Outer try/catch: any uncaught error during initialisation is logged
@@ -2125,6 +2472,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Format section accordions for single video (V/A/S)
     initFormatSectionAccordions();
+
+    // Build yt-dlp advanced modal DOM
+    initYtdlpModal();
     // ── Search-clear button: show X while typing, clear on click ───────────
     document.addEventListener('input', e => {
       if (!e.target.classList.contains('sub-search')) return;

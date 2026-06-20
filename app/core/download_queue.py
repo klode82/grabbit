@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+import json
+import os
 import threading
 import uuid
 from enum import Enum
+from pathlib import Path
 from typing import Callable, Dict, List, Optional
 
 
@@ -54,10 +57,86 @@ class DownloadQueue:
         self._order: List[str] = []
         self._lock = threading.Lock()
         self.max_concurrent = max_concurrent
-        self.is_paused: bool = False          # global pause flag
+        self.is_paused: bool = False
+        self.auto_start: bool = True   # updated from settings at startup
         self._listeners: List[Callable[[dict], None]] = []
 
-    # ── Listeners ─────────────────────────────────────────────────────────────
+        # Persistence path — same directory as settings.json
+        if os.name == "nt":
+            base = Path(os.environ.get("APPDATA", Path.home()))
+        else:
+            base = Path.home() / ".config"
+        self._queue_path: Path = base / "grabbit" / "queue.json"
+
+        self._load_queue()   # restore previous session
+        # NOTE: _schedule() is NOT called here intentionally.
+        # It is triggered from routes.py once the WS listener is registered
+        # and auto_start_downloads has been read from settings.
+
+    # ── Persistence ───────────────────────────────────────────────────────────
+
+    def _save_queue(self) -> None:
+        """Write the current queue to disk. Called on every significant change."""
+        try:
+            self._queue_path.parent.mkdir(parents=True, exist_ok=True)
+            with self._lock:
+                payload = {
+                    "version": 1,
+                    "order":   list(self._order),
+                    "items": {
+                        iid: {
+                            "id":        item.id,
+                            "url":       item.url,
+                            "title":     item.title,
+                            "thumbnail": item.thumbnail,
+                            "status":    item.status,
+                            "progress":  item.progress,
+                            "error":     item.error,
+                            "filename":  item.filename,
+                            "options":   item.options,
+                        }
+                        for iid, item in self._items.items()
+                        if item.status != Status.CANCELLED
+                    },
+                }
+            self._queue_path.write_text(
+                json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8"
+            )
+        except Exception as exc:
+            from app.core.logger import log
+            log.warning("Could not save queue: %s", exc)
+
+    def _load_queue(self) -> None:
+        """Restore the queue from disk on startup."""
+        if not self._queue_path.exists():
+            return
+        try:
+            data = json.loads(self._queue_path.read_text(encoding="utf-8"))
+            if data.get("version") != 1:
+                return
+            for iid in data.get("order", []):
+                raw = data.get("items", {}).get(iid)
+                if not raw:
+                    continue
+                opts = dict(raw.get("options") or {})
+                opts["thumbnail"] = raw.get("thumbnail")
+                item = DownloadItem(raw["url"], raw["title"], opts)
+                item.id       = raw["id"]
+                item.error    = raw.get("error")
+                item.filename = raw.get("filename", "")
+                # Interrupted downloads restart from PENDING; PAUSED stays PAUSED
+                # so the user's explicit pause choice is respected on restart.
+                status = raw.get("status", Status.PENDING)
+                if status == Status.DOWNLOADING:
+                    status = Status.PENDING
+                item.status   = status
+                # Preserve progress only for completed items (cosmetic)
+                item.progress = raw.get("progress", 0.0) if status == Status.COMPLETED else 0.0
+                self._items[item.id] = item
+                self._order.append(item.id)
+        except Exception as exc:
+            from app.core.logger import log
+            log.warning("Could not load queue: %s", exc)
 
     def add_listener(self, callback: Callable[[dict], None]) -> None:
         """Register a callback that receives every queue event."""
@@ -66,13 +145,15 @@ class DownloadQueue:
     # ── Item lifecycle ─────────────────────────────────────────────────────────
 
     def add(self, url: str, title: str, options: dict) -> DownloadItem:
-        """Add an item to the queue and try to start it."""
+        """Add an item to the queue and optionally start it immediately."""
         item = DownloadItem(url, title, options)
         with self._lock:
             self._items[item.id] = item
             self._order.append(item.id)
         self._emit_item("added", item)
-        self._schedule()
+        if self.auto_start:
+            self._schedule()
+        self._save_queue()
         return item
 
     def cancel(self, item_id: str) -> bool:
@@ -85,9 +166,9 @@ class DownloadQueue:
                 item.status = Status.CANCELLED
                 item._stop_event.set()
                 cancelled_item = item
-        # Emit outside the lock so the event loop is never blocked
         if cancelled_item:
             self._emit_item("status", cancelled_item)
+            self._save_queue()
             return True
         return False
 
@@ -101,6 +182,7 @@ class DownloadQueue:
             del self._items[item_id]
             self._order = [i for i in self._order if i != item_id]
         self._emit_stats()
+        self._save_queue()
         return True
 
     def pause(self, item_id: str) -> bool:
@@ -112,9 +194,9 @@ class DownloadQueue:
                 item.status = Status.PAUSED
                 item._stop_event.set()
                 paused_item = item
-        # Emit outside the lock
         if paused_item:
             self._emit_item("status", paused_item)
+            self._save_queue()
             return True
         return False
 
@@ -130,6 +212,7 @@ class DownloadQueue:
                 resumed_item = item
         if resumed_item:
             self._emit_item("status", resumed_item)
+            self._save_queue()
         self._schedule()
         return True
 
@@ -140,13 +223,14 @@ class DownloadQueue:
             item = self._items.get(item_id)
             if item and item.status in (Status.CANCELLED, Status.ERROR):
                 item._stop_event.clear()
-                item.options.pop("continuedl", None)  # fresh start, no resume
+                item.options.pop("continuedl", None)
                 item.status   = Status.PENDING
                 item.progress = 0.0
                 item.error    = None
                 restarted_item = item
         if restarted_item:
             self._emit_item("status", restarted_item)
+            self._save_queue()
         self._schedule()
         return restarted_item is not None
 
@@ -160,6 +244,7 @@ class DownloadQueue:
                       if i.status == Status.DOWNLOADING]
         for item in active:
             self.pause(item.id)
+        self._save_queue()
 
     def resume_all(self) -> None:
         """Resume the whole queue."""
@@ -179,19 +264,20 @@ class DownloadQueue:
                 del self._items[iid]
             self._order = [o for o in self._order if o not in ids]
         self._emit_queue_update()
+        self._save_queue()
         return len(ids)
 
     def clear_all(self) -> None:
-        """Cancel and remove every item. Also resets the paused flag so new
-        downloads can start immediately after clearing."""
+        """Cancel and remove every item. Also resets the paused flag."""
         with self._lock:
             for item in self._items.values():
                 item._stop_event.set()
                 item.status = Status.CANCELLED
             self._items.clear()
             self._order.clear()
-        self.is_paused = False   # ← critical: Pause All + Clear All must not
-        self._emit_queue_update()  #   leave the queue stuck in paused state
+        self.is_paused = False
+        self._emit_queue_update()
+        self._save_queue()
 
     def get_all(self) -> List[dict]:
         with self._lock:
@@ -282,10 +368,8 @@ class DownloadQueue:
                     if final_path:
                         item.filename = final_path
             self._emit_item("status", item)
+            self._save_queue()
         except _DownloadInterrupted:
-            # Download was interrupted by pause() or cancel().
-            # The status was already set by those methods.
-            # Clean up any .part / .ytdl temp files left in the output folder.
             from app.core.ytdlp_wrapper import _cleanup_partial_files
             _cleanup_partial_files(item.options.get("output_dir", "."))
         except Exception as exc:
@@ -294,8 +378,9 @@ class DownloadQueue:
                     item.status = Status.ERROR
                     item.error  = str(exc)
             self._emit_item("status", item)
+            self._save_queue()
         finally:
-            self._schedule()   # fill the freed slot with the next pending item
+            self._schedule()
 
     # ── Event helpers ──────────────────────────────────────────────────────────
 

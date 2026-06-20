@@ -1564,3 +1564,240 @@ a:hover { text-decoration: underline; }
 .dialog-box.danger .dialog-title { color: var(--danger); }
 #dialog-ok-btn.danger { background: var(--danger); color: #fff; }
 #dialog-ok-btn.danger:hover { background: #e05555; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   yt-dlp Advanced Parameters Modal
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Modal overlay & card ────────────────────────────────────────────────── */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.55);
+  z-index: 500;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.modal-overlay.open { display: flex; }
+
+.modal-card {
+  background: var(--surface);
+  border: 1px solid var(--border-md);
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 16px 48px rgba(0,0,0,0.22);
+}
+.ytdlp-modal {
+  width: 100%;
+  max-width: 920px;
+  max-height: 88vh;
+}
+
+/* ── Modal header ────────────────────────────────────────────────────────── */
+.modal-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px 20px 14px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.modal-header-info { flex-shrink: 0; }
+.modal-title    { font-size: 14px; font-weight: 700; margin: 0; }
+.modal-subtitle { font-size: 11px; color: var(--text-3); margin: 2px 0 0; }
+.modal-presets-bar {
+  flex: 1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  align-items: center;
+  padding: 0 8px;
+}
+.modal-close-btn {
+  flex-shrink: 0;
+  width: 28px; height: 28px;
+  display: flex; align-items: center; justify-content: center;
+  background: none; border: 1px solid var(--border);
+  border-radius: var(--r); cursor: pointer;
+  color: var(--text-3);
+}
+.modal-close-btn:hover { background: var(--surface-hov); color: var(--text); }
+
+/* ── Modal body: left nav + right content ────────────────────────────────── */
+.ytdlp-modal-body {
+  display: grid;
+  grid-template-columns: 180px 1fr;
+  flex: 1;
+  overflow: hidden;
+  min-height: 0;
+}
+
+/* ── Left: section navigation ────────────────────────────────────────────── */
+.ytdlp-section-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 8px;
+  border-right: 1px solid var(--border);
+  background: var(--surface-el);
+  overflow-y: auto;
+}
+.ytdlp-nav-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 12px;
+  border-radius: var(--r);
+  border: none;
+  background: none;
+  color: var(--text-2);
+  font-size: 12px;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+  width: 100%;
+}
+.ytdlp-nav-btn:hover  { background: var(--surface-hov); color: var(--text); }
+.ytdlp-nav-btn.active { background: var(--accent-dim); color: var(--accent); font-weight: 600; }
+.ytdlp-nav-badge {
+  margin-left: auto;
+  background: var(--accent);
+  color: #fff;
+  font-size: 9px; font-weight: 700;
+  border-radius: 10px;
+  padding: 1px 5px;
+  min-width: 14px;
+  text-align: center;
+  display: none;
+}
+.ytdlp-nav-badge.visible { display: inline-block; }
+
+/* ── Right: section parameter controls ───────────────────────────────────── */
+.ytdlp-section-content {
+  overflow-y: auto;
+  padding: 20px 24px;
+}
+.ytdlp-section-title {
+  font-size: 13px; font-weight: 700;
+  margin-bottom: 16px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+.param-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+  min-height: 32px;
+}
+.param-row.wide { grid-template-columns: 1fr; }
+.param-label {
+  font-size: 13px;
+  color: var(--text-2);
+  display: flex; align-items: center; gap: 4px;
+}
+.param-hint { font-size: 10px; color: var(--text-3); cursor: help; }
+.param-row.disabled { opacity: 0.38; pointer-events: none; }
+.param-control { display: flex; align-items: center; }
+.param-control .input {
+  height: 30px;
+  padding: 4px 10px;
+  font-size: 12px;
+  width: 100%;
+}
+.multichip-wrap { display: flex; flex-wrap: wrap; gap: 4px; }
+.multichip-wrap .format-chip {
+  font-size: 11px;
+  height: 24px;
+  padding: 0 10px;
+}
+
+/* ── Modal footer ────────────────────────────────────────────────────────── */
+.modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 20px;
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+  gap: 8px;
+}
+.modal-footer-actions { display: flex; gap: 8px; align-items: center; }
+
+/* ── ⚙ Avanzato button + badge ───────────────────────────────────────────── */
+.ytdlp-adv-btn { position: relative; gap: 5px; }
+.ytdlp-adv-badge {
+  display: none;
+  background: var(--accent);
+  color: #fff;
+  font-size: 9px; font-weight: 700;
+  border-radius: 10px;
+  padding: 1px 5px;
+  min-width: 14px;
+  text-align: center;
+  line-height: 1.5;
+}
+.ytdlp-adv-badge.active { display: inline-block; }
+
+/* ── Preset chips ─────────────────────────────────────────────────────────── */
+.preset-chip {
+  display: flex; align-items: center; gap: 5px;
+  padding: 3px 8px 3px 10px;
+  border-radius: var(--r-pill);
+  border: 1px solid var(--border-md);
+  background: var(--surface-el);
+  font-size: 11px; cursor: pointer;
+  color: var(--text-2);
+  transition: border-color 0.15s, color 0.15s;
+}
+.preset-chip:hover  { border-color: var(--accent); color: var(--accent); }
+.preset-chip.active { background: var(--accent-dim); border-color: var(--accent); color: var(--accent); font-weight: 600; }
+.preset-del {
+  background: none; border: none;
+  color: var(--text-3); cursor: pointer;
+  padding: 0; font-size: 13px; line-height: 1;
+}
+.preset-del:hover { color: var(--danger); }
+
+/* ── Preset save inline input ─────────────────────────────────────────────── */
+.preset-save-wrap { position: relative; }
+.preset-save-input-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.preset-save-input-row .input {
+  height: 30px;
+  width: 180px;
+  padding: 4px 10px;
+  font-size: 12px;
+}
+
+/* ── Playlist format bar — advanced params footer ─────────────────────────── */
+.pl-format-advanced {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  padding: 10px 12px 4px;
+  border-top: 1px solid var(--border);
+  margin-top: 4px;
+}
+
+/* ── Settings toggle row (label + hint + toggle) ─────────────────────────── */
+.settings-toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+.settings-hint {
+  font-size: 11px;
+  color: var(--text-3);
+  margin-top: 2px;
+  line-height: 1.4;
+}

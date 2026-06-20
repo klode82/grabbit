@@ -24,7 +24,9 @@ _DEFAULTS: dict[str, Any] = {
     "default_sub_lang": "",             # ISO 639-1, empty = none
     "default_sub_auto": False,          # include auto-generated captions
     "embed_subs": False,                # embed subs in container
-    "subtitle_format": "srt",          # "srt" | "ass" | "vtt" (vtt = no conversion)
+    "subtitle_format":      "srt",          # "srt" | "ass" | "vtt"
+    "auto_start_downloads": True,           # avvia download immediatamente all'inserimento
+    "presets":              [],             # list of {name, params} dicts for the adv. modal
     # Network
     "rate_limit": "",                   # e.g. "1M", empty = unlimited
     "cookies_file": "",                 # path to Netscape cookies file
