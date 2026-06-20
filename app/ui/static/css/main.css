@@ -978,6 +978,25 @@ a:hover { text-decoration: underline; }
 }
 
 /* ── Playlist entry: the accordion card ─────────────────────────────────── */
+/* ── Format section: needs user attention (orange state) ─────────────────── */
+.format-section.needs-selection > .format-section-header {
+  background: var(--warn-dim);
+  border-radius: var(--r) var(--r) 0 0;
+  position: relative;
+}
+.format-section.needs-selection > .format-section-header::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 3px;
+  background: var(--warn);
+  border-radius: 2px 0 0 2px;
+}
+.format-section.needs-selection .format-section-title {
+  color: var(--warn);
+  font-weight: 700;
+}
+
 .playlist-entry {
   display: flex;
   flex-direction: column;   /* header ABOVE body */
@@ -1334,7 +1353,12 @@ a:hover { text-decoration: underline; }
 }
 .format-group-chips .format-chip { width: 100%; text-align: left; }
 
-/* ── Global playlist format bar — each section is an accordion ───────────── */
+/* ── Playlist format bar disabled during analysis ────────────────────────── */
+.pl-format-bar.analyzing {
+  opacity: 0.38;
+  pointer-events: none;
+  user-select: none;
+}
 .pl-format-bar {
   display: flex;
   flex-direction: column;

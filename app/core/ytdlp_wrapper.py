@@ -9,6 +9,14 @@ import yt_dlp
 
 from app.core.logger import log
 
+# yt-dlp injects ANSI colour codes into _speed_str / _eta_str; strip them
+# before sending to the frontend so the UI sees plain text.
+_ANSI_RE = re.compile(r'\x1b\[[0-9;]*[a-zA-Z]')
+
+
+def _strip_ansi(s: str) -> str:
+    return _ANSI_RE.sub('', s or '')
+
 
 class _DownloadInterrupted(BaseException):
     """Raised inside the yt-dlp progress hook to interrupt a download.
@@ -327,8 +335,8 @@ class YTDLPWrapper:
                     "percent":   round(percent, 1),
                     "downloaded": downloaded,
                     "total":     total,
-                    "speed":     d.get("_speed_str", ""),
-                    "eta":       d.get("_eta_str", ""),
+                    "speed":     _strip_ansi(d.get("_speed_str", "")),
+                    "eta":       _strip_ansi(d.get("_eta_str", "")),
                     "filename":  d.get("filename", ""),
                 })
             elif status == "finished":
@@ -431,16 +439,23 @@ class YTDLPWrapper:
             ydl_opts["sleep_interval_subtitles"]  = 1
             if options.get("subtitle_auto"):
                 ydl_opts["writeautomaticsub"] = True
-            if options.get("embed_subs"):
-                ydl_opts["embedsubtitles"] = True
-            # Convert subtitle format via explicit post-processor (more reliable
-            # than the convertsubtitles param key which varies across yt-dlp versions)
+
+            pps     = ydl_opts.setdefault("postprocessors", [])
             sub_fmt = options.get("subtitle_format", "vtt")
+
+            # Step 1 — convert format (must happen BEFORE embed)
             if sub_fmt and sub_fmt != "vtt":
-                ydl_opts.setdefault("postprocessors", []).append({
+                pps.append({
                     "key":    "FFmpegSubtitlesConvertor",
                     "format": sub_fmt,
                 })
+
+            # Step 2 — embed into container (after conversion)
+            # Added to the explicit list so it runs AFTER the convertor.
+            # Do NOT also set ydl_opts["embedsubtitles"] = True: that would
+            # let yt-dlp insert a second FFmpegEmbedSubtitlePP *before* ours.
+            if options.get("embed_subs"):
+                pps.append({"key": "FFmpegEmbedSubtitle"})
 
         if options.get("rate_limit"):
             ydl_opts["ratelimit"] = options["rate_limit"]

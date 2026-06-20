@@ -499,7 +499,7 @@ function renderSubtitles(subs) {
     el.dataset.lang = lang;
     el.dataset.auto = auto;
     el.innerHTML = `
-      <span class="sub-item-lang">${lang}</span>
+      <span class="sub-item-lang">${langName(lang)}</span>
       <span class="sub-item-type ${auto ? 'auto' : 'manual'}">
         ${auto ? I18N.t('subtitles.auto') : I18N.t('subtitles.manual')}
       </span>`;
@@ -1059,14 +1059,32 @@ function updateEntryOrangeState(eid) {
   const el = qs(`#pe-${eid}`);
   if (!el) return;
   const sel = State.plEntrySelections[eid] || {};
-  // Per-entry toggle overrides global when explicitly set (false = user disabled it)
   const videoOn = State.plVideoEnabled && (sel.videoEnabled !== false);
   const audioOn = State.plAudioEnabled && (sel.audioEnabled !== false);
-  const subsOn  = State.plSubsEnabled  && (sel.subsEnabled  !== false);
+
+  // Subs: use explicit value if set; otherwise infer from availability so the
+  // orange state stays consistent with the toggle (which starts OFF = undefined).
+  let subsOn;
+  if (sel.subsEnabled !== undefined) {
+    subsOn = sel.subsEnabled === true;
+  } else if (!State.plSubsEnabled) {
+    subsOn = false;
+  } else {
+    // Accordion not yet opened: check entry data directly
+    const entry = State.playlistEntries.find(e => (e._stub?.id || e.id) === eid);
+    const hasSubs = !!(entry?.subtitle_data && Object.keys(entry.subtitle_data).length);
+    subsOn = hasSubs;
+  }
+
   const needsVideo = videoOn && !sel.video;
   const needsAudio = audioOn && !sel.audio;
   const needsSubs  = subsOn  && !sel.subs;
   el.classList.toggle('needs-selection', needsVideo || needsAudio || needsSubs);
+
+  const map = { v: needsVideo, a: needsAudio, s: needsSubs };
+  Object.entries(map).forEach(([t, needs]) => {
+    qs(`#pes-${t}-${eid}`)?.classList.toggle('needs-selection', needs);
+  });
 }
 
 function countOrangeSelected() {
@@ -1076,7 +1094,15 @@ function countOrangeSelected() {
     const sel = State.plEntrySelections[eid] || {};
     const videoOn = State.plVideoEnabled && (sel.videoEnabled !== false);
     const audioOn = State.plAudioEnabled && (sel.audioEnabled !== false);
-    const subsOn  = State.plSubsEnabled  && (sel.subsEnabled  !== false);
+    let subsOn;
+    if (sel.subsEnabled !== undefined) {
+      subsOn = sel.subsEnabled === true;
+    } else if (!State.plSubsEnabled) {
+      subsOn = false;
+    } else {
+      const hasSubs = !!(e?.subtitle_data && Object.keys(e.subtitle_data).length);
+      subsOn = hasSubs;
+    }
     return (videoOn && !sel.video) || (audioOn && !sel.audio) || (subsOn && !sel.subs);
   }).length;
 }
@@ -1240,6 +1266,8 @@ async function handlePlaylistResult(playlist) {
     qs('#pl-subs-accordion')?.classList.add('disabled');
   }
 
+  qs('#pl-format-bar')?.classList.add('analyzing');
+
   const panel = qs('#playlist-analysis');
   panel.classList.add('visible');
   qs('#playlist-title-text').textContent = playlist.title || I18N.t('playlist.untitled');
@@ -1270,7 +1298,8 @@ async function handlePlaylistResult(playlist) {
     qs('#playlist-progress-fill').style.width = `${(done / playlist.count) * 100}%`;
   }
 
-  // After all entries analyzed → compute format maps and render global chips
+  // Analisi completata — riabilita il bar globale
+  qs('#pl-format-bar')?.classList.remove('analyzing');
   renderPlaylistGlobalChips();
   progressLabel.textContent = I18N.t('playlist.done', { n: done });
 
@@ -1286,11 +1315,7 @@ async function handlePlaylistResult(playlist) {
       : State.plSubtitleFormatMap[`auto_${defaultLang}`]
       ? `auto_${defaultLang}` : null;
     if (key) {
-      selectPlSubtitle(key);
-      const body  = qs('#pl-subs-chip-area');
-      const arrow = qs('#pl-subs-arrow');
-      if (body)  body.style.display = '';
-      if (arrow) arrow.classList.add('open');
+      selectPlSubtitle(key);  // badge nell'header mostra la selezione — accordion resta chiuso
     }
   }
 
@@ -1453,6 +1478,14 @@ function renderEntryAccordionBody(eid, entry) {
   const body = outer.querySelector('.pl-body-inner');
   if (!body) return;
   const sel = State.plEntrySelections[eid] || {};
+  State.plEntrySelections[eid] = sel;  // ensure ref is stored
+
+  // On first open: initialize subsEnabled from availability so toggle and orange
+  // state stay consistent. ON only if global subs are ON AND entry has subs.
+  if (sel.subsEnabled === undefined) {
+    const hasSubs = !!(entry?.subtitle_data && Object.keys(entry.subtitle_data).length);
+    sel.subsEnabled = State.plSubsEnabled && hasSubs;
+  }
 
   body.innerHTML = `
     <div class="result-formats">
@@ -1541,6 +1574,15 @@ function renderEntryAccordionBody(eid, entry) {
   renderEntryFormatChips('video', eid, entry.video_formats || [], sel.video);
   renderEntryFormatChips('audio', eid, entry.audio_formats || [], sel.audio);
   renderEntrySubList(eid, entry.subtitles || {}, sel.subs);
+  // Restore subtitle badge if a sub was already selected
+  const existingSub = sel.subs;
+  if (existingSub?.lang) {
+    const badge = qs(`#peb-s-${eid}`);
+    if (badge) {
+      const label = `${langName(existingSub.lang)}${existingSub.auto ? ' (auto)' : ''}`;
+      badge.innerHTML = `<span class="format-chip selected" style="pointer-events:none;font-size:11px;height:22px">${label}</span>`;
+    }
+  }
   _restoreEntryHint('v', eid, entry.video_formats, sel.video);
   _restoreEntryHint('a', eid, entry.audio_formats, sel.audio);
 }
@@ -1608,8 +1650,10 @@ function renderEntrySubList(eid, subs, selectedSub) {
     const el = document.createElement('div');
     const active = selectedSub?.lang === lang && String(selectedSub?.auto) === String(auto);
     el.className = `sub-item${active ? ' selected' : ''}`;
+    el.dataset.lang = lang;               // ← mancava: necessario per il filtro ricerca
+    el.dataset.auto = String(auto);
     el.innerHTML = `
-      <span class="sub-item-lang">${lang}</span>
+      <span class="sub-item-lang">${langName(lang)}</span>
       <span class="sub-item-type ${auto ? 'auto' : 'manual'}">
         ${auto ? I18N.t('subtitles.auto') : I18N.t('subtitles.manual')}
       </span>`;
@@ -1621,11 +1665,29 @@ function renderEntrySubList(eid, subs, selectedSub) {
 function selectEntrySubtitle(eid, lang, auto) {
   if (!State.plEntrySelections[eid]) State.plEntrySelections[eid] = {};
   State.plEntrySelections[eid].subs = lang ? { lang, auto } : null;
-  qsa(`#pef-s-${eid} .sub-item`).forEach(el => {
-    const active = lang ? (el.dataset.lang === lang) : (el.dataset.lang === '__none__');
+
+  // Highlight selected item
+  qsa(`#pefs-${eid} .sub-item`).forEach(el => {
+    const active = lang
+      ? (el.dataset.lang === lang && String(el.dataset.auto) === String(auto))
+      : (el.dataset.lang === '__none__');
     el.classList.toggle('selected', active);
   });
+
+  // Update accordion header badge
+  const badge = qs(`#peb-s-${eid}`);
+  if (badge) {
+    const label = lang
+      ? `${langName(lang)}${auto ? ' (auto)' : ''}`
+      : null;
+    badge.innerHTML = label
+      ? `<span class="format-chip selected" style="pointer-events:none;font-size:11px;height:22px">${label}</span>`
+      : '';
+  }
+
   updateEntryHeaderBadges(eid);
+  updateEntryOrangeState(eid);
+  updateAddQueueBtn();
 }
 
 function renderEntryFormatChips(type, eid, formats, selectedId) {
@@ -2079,6 +2141,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       input.dispatchEvent(new Event('input', { bubbles: true }));
       input.focus();
     });
+
+    // Subtitle search — single video
+    qs('#sub-search')?.addEventListener('input', e => filterSingleVideoSubs(e.target.value));
 
     // Subtitle search — global playlist selector
     qs('#pl-subs-search')?.addEventListener('input', e =>
