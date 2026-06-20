@@ -244,6 +244,7 @@ def main() -> None:
         height=700,
         min_size=(720, 540),
         resizable=True,
+        # frameless=True,
         text_select=False,
         # Expose Python functions to JavaScript via window.pywebview.api
         js_api=GrabbitAPI(),
@@ -298,13 +299,14 @@ def main() -> None:
 
                         if target is None:
                             print("[GRABBIT] frameless: no suitable window found — retrying in 1s", file=sys.stderr)
-                            QTimer.singleShot(1000, _apply_frameless)
+                            QTimer.singleShot(0, _apply_frameless)
                             return
 
-                        pos = target.pos()
                         target.setWindowFlag(Qt.WindowType.FramelessWindowHint, True)
-                        target.show()
+                        pos = target.pos()
                         target.move(pos)
+                        target.show()
+                        
                         print(f"[GRABBIT] frameless: OK on {type(target).__name__}", file=sys.stderr)
 
                     except Exception as exc:
