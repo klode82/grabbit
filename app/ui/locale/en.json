@@ -133,7 +133,9 @@
     "tpl_guide_label": "Insert:",
     "sub_lang_none": "— None / Any —",
     "auto_start": "Start downloads automatically",
-    "auto_start_hint": "If disabled, downloads wait in queue until you press Resume All"
+    "auto_start_hint": "If disabled, downloads wait in queue until you press Resume All",
+    "notify_complete": "Notify on completion",
+    "notify_complete_hint": "System notification when a download finishes, only if the window isn't focused"
   },
   "common": {
     "cancel": "Cancel",
@@ -165,5 +167,15 @@
     "clear_all_title": "Clear entire queue",
     "clear_all_msg": "All downloads will be cancelled and removed. This cannot be undone.",
     "clear_all_confirm": "Clear all"
+  },
+  "close": {
+    "confirm": {
+      "title": "Quit GRABBIT?",
+      "active": "Downloads in progress: {n}. Quitting now interrupts them; the queue is saved and resumes on next launch.",
+      "analyzing": "An analysis is in progress. Quitting now discards it.",
+      "both": "Analysis running and {n} active download(s). Quitting now interrupts them; the queue is saved.",
+      "quit": "Quit anyway",
+      "stay": "Cancel"
+    }
   }
 }

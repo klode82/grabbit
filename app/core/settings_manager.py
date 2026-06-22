@@ -26,6 +26,7 @@ _DEFAULTS: dict[str, Any] = {
     "embed_subs": False,                # embed subs in container
     "subtitle_format":      "srt",          # "srt" | "ass" | "vtt"
     "auto_start_downloads": True,           # avvia download immediatamente all'inserimento
+    "notify_on_complete":   True,           # notifica di sistema a fine download (se finestra non a fuoco)
     "presets":              [],             # list of {name, params} dicts for the adv. modal
     # Network
     "rate_limit": "",                   # e.g. "1M", empty = unlimited

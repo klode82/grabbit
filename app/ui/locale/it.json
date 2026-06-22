@@ -133,7 +133,9 @@
     "tpl_guide_label": "Inserisci:",
     "sub_lang_none": "— Nessuna / Qualsiasi —",
     "auto_start": "Avvia download automaticamente",
-    "auto_start_hint": "Se disattivato, i download restano in attesa finché non premi Resume All"
+    "auto_start_hint": "Se disattivato, i download restano in attesa finché non premi Resume All",
+    "notify_complete": "Notifica al completamento",
+    "notify_complete_hint": "Notifica di sistema a fine download, solo se la finestra non è in primo piano"
   },
   "common": {
     "cancel": "Annulla",
@@ -165,5 +167,15 @@
     "clear_all_title": "Svuota la coda",
     "clear_all_msg": "Tutti i download verranno annullati e rimossi. Questa azione è irreversibile.",
     "clear_all_confirm": "Svuota tutto"
+  },
+  "close": {
+    "confirm": {
+      "title": "Chiudere GRABBIT?",
+      "active": "Download in corso: {n}. Se chiudi ora vengono interrotti; la coda resta salvata e riprende al prossimo avvio.",
+      "analyzing": "Un'analisi è in corso. Se chiudi ora andrà persa.",
+      "both": "Analisi in corso e {n} download attivi. Se chiudi ora vengono interrotti; la coda resta salvata.",
+      "quit": "Esci comunque",
+      "stay": "Annulla"
+    }
   }
 }

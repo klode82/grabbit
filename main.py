@@ -156,6 +156,18 @@ class GrabbitAPI:
         from app.core.logger import get_log_path
         return get_log_path()
 
+    def notify(self, title: str, body: str) -> None:
+        """Show a native OS notification.
+
+        Called from the web UI when a download completes or fails AND the
+        window is not focused (the UI makes that decision via document
+        .hasFocus()). The icon is passed when present; backends that can't use
+        it ignore it gracefully.
+        """
+        from app.core.notifier import notify as _notify
+        _icon = Path(__file__).parent / "assets" / "icon.png"
+        _notify(title, body, str(_icon) if _icon.exists() else None)
+
     def open_file(self, path: str) -> None:
         """Open a file with the system's default application."""
         if not path or not path.strip():
@@ -249,6 +261,31 @@ def main() -> None:
         # Expose Python functions to JavaScript via window.pywebview.api
         js_api=GrabbitAPI(),
     )
+
+    def _on_closing() -> bool:
+        """Intercept OS-level close requests (Alt+F4, Cmd+Q, window manager)
+        and route them through the same in-app confirmation as the custom
+        title-bar button.
+
+        We delegate to the UI's requestClose(), which shows the inline
+        confirmation when a download or analysis is in progress and performs
+        the real exit via os._exit(0) on confirmation. Returning False cancels
+        the *native* close so the window stays put until the JS flow decides —
+        this never traps the user, because a confirmed (or idle) quit calls
+        close_window() → os._exit(0) regardless.
+
+        If the UI can't be reached for any reason, we allow the close so the
+        app can never become unquittable.
+        """
+        try:
+            window.evaluate_js("window.requestClose && window.requestClose()")
+            return False
+        except Exception as exc:
+            from app.core.logger import log
+            log.debug("closing handler could not reach UI: %s", exc)
+            return True
+
+    window.events.closing += _on_closing
 
     def _set_app_icon() -> None:
         """Set the window and taskbar icon after the GUI has initialised.

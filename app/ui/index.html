@@ -31,7 +31,7 @@
           <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="0.75" y="0.75" width="8.5" height="8.5" rx="1.5"/></svg>
         </button>
         <button class="window-btn close" title="Close"
-                onclick="window.pywebview?.api?.close_window()">
+                onclick="requestClose()">
           <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="1" y1="1" x2="9" y2="9"/><line x1="9" y1="1" x2="1" y2="9"/></svg>
         </button>
       </div>
@@ -465,6 +465,18 @@
             </div>
             <label class="toggle">
               <input type="checkbox" id="s-auto-start">
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+
+          <!-- Row 5: notify on complete -->
+          <div class="settings-field settings-toggle-row">
+            <div>
+              <div class="settings-label" data-i18n="settings.notify_complete">Notifica al completamento</div>
+              <div class="settings-hint" data-i18n="settings.notify_complete_hint">Notifica di sistema a fine download, solo se la finestra non è in primo piano</div>
+            </div>
+            <label class="toggle">
+              <input type="checkbox" id="s-notify-complete">
               <span class="toggle-slider"></span>
             </label>
           </div>

@@ -11,6 +11,10 @@ pydantic>=2.9.0
 # Linux requires xclip or xsel: sudo apt install xclip
 pyperclip>=1.8.2
 
+# Native toast notifications on Windows (GrabbitAPI.notify → app/core/notifier.py).
+# macOS uses built-in osascript and Linux uses notify-send — neither needs a package.
+winotify>=1.1.0; sys_platform == "win32"
+
 # Linux only — pywebview GUI backend (macOS e Windows usano il webview nativo del sistema)
 PySide6>=6.7.0; sys_platform == "linux"
 qtpy>=2.4.0; sys_platform == "linux"

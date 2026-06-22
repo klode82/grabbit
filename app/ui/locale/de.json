@@ -133,7 +133,9 @@
     "tpl_guide_label": "Einfügen:",
     "sub_lang_none": "— Keine / Beliebig —",
     "auto_start": "Downloads automatisch starten",
-    "auto_start_hint": "Falls deaktiviert, warten Downloads bis du \"Alle fortsetzen\" drückst"
+    "auto_start_hint": "Falls deaktiviert, warten Downloads bis du \"Alle fortsetzen\" drückst",
+    "notify_complete": "Benachrichtigung bei Abschluss",
+    "notify_complete_hint": "Systembenachrichtigung nach Abschluss, nur wenn das Fenster nicht im Vordergrund ist"
   },
   "common": {
     "cancel": "Abbrechen",
@@ -165,5 +167,15 @@
     "clear_all_title": "Warteschlange leeren",
     "clear_all_msg": "Alle Downloads werden abgebrochen und entfernt.",
     "clear_all_confirm": "Alles leeren"
+  },
+  "close": {
+    "confirm": {
+      "title": "GRABBIT beenden?",
+      "active": "Laufende Downloads: {n}. Beim Beenden werden sie unterbrochen; die Warteschlange wird gespeichert und beim nächsten Start fortgesetzt.",
+      "analyzing": "Eine Analyse läuft. Beim Beenden geht sie verloren.",
+      "both": "Analyse läuft und {n} aktive Downloads. Beim Beenden werden sie unterbrochen; die Warteschlange wird gespeichert.",
+      "quit": "Trotzdem beenden",
+      "stay": "Abbrechen"
+    }
   }
 }

@@ -75,7 +75,9 @@ grabbit/
 │   ├── core/
 │   │   ├── ytdlp_wrapper.py         # Wrapper yt-dlp (analisi + download)
 │   │   ├── download_queue.py        # Coda thread-safe con concorrenza
-│   │   └── settings_manager.py      # Persistenza impostazioni JSON
+│   │   ├── settings_manager.py      # Persistenza impostazioni JSON
+│   │   ├── logger.py                # Logger rotante (file + console)
+│   │   └── notifier.py              # Notifiche di sistema native (osascript / notify-send / winotify)
 │   │
 │   ├── api/
 │   │   └── routes.py                # Tutti gli endpoint REST + WebSocket
@@ -235,7 +237,7 @@ grabbit/
 
 ---
 
-### 🚧 Phase 8 — Modal Parametri yt-dlp & Preset
+### ✅ Phase 8 — Modal Parametri yt-dlp & Preset
 > Accesso avanzato ai parametri di yt-dlp con sistema di preset salvabili.
 
 **Modal parametri**
@@ -262,9 +264,10 @@ grabbit/
 
 ---
 
-### 🔲 Phase 9 — Notifiche & Sistema
+### 🚧 Phase 9 — Notifiche & Sistema
 > Integrazione con l'OS.
 
+- [x] **Conferma chiusura** — dialog inline se download attivo o analisi in corso; intercetta sia il pulsante X sia la chiusura OS (Alt+F4 / Cmd+Q) via handler `closing` → `requestClose()`. Item solo in coda (PENDING/PAUSED) esclusi dal trigger perché la coda è persistente. `State.queueStats` centralizzato in `renderStats` come unica fonte live
 - [ ] Notifica di sistema nativa al completamento download (`plyer` o pywebview API)
 - [ ] Icona tray su Windows/macOS con menu contestuale (minimizza in background)
 - [ ] Apertura automatica cartella di destinazione (opzionale, configurabile)

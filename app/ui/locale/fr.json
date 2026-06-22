@@ -133,7 +133,9 @@
     "tpl_guide_label": "Insérer :",
     "sub_lang_none": "— Aucune / Quelconque —",
     "auto_start": "Démarrer automatiquement",
-    "auto_start_hint": "Si désactivé, les téléchargements attendent jusqu'à ce que vous appuyiez sur Reprendre tout"
+    "auto_start_hint": "Si désactivé, les téléchargements attendent jusqu'à ce que vous appuyiez sur Reprendre tout",
+    "notify_complete": "Notifier à la fin",
+    "notify_complete_hint": "Notification système à la fin, uniquement si la fenêtre n'est pas au premier plan"
   },
   "common": {
     "cancel": "Annuler",
@@ -165,5 +167,15 @@
     "clear_all_title": "Vider la file",
     "clear_all_msg": "Tous les téléchargements seront annulés et supprimés.",
     "clear_all_confirm": "Vider tout"
+  },
+  "close": {
+    "confirm": {
+      "title": "Quitter GRABBIT ?",
+      "active": "Téléchargements en cours : {n}. Quitter maintenant les interrompt ; la file est enregistrée et reprend au prochain démarrage.",
+      "analyzing": "Une analyse est en cours. Quitter maintenant l'annule.",
+      "both": "Analyse en cours et {n} téléchargements actifs. Quitter maintenant les interrompt ; la file est enregistrée.",
+      "quit": "Quitter quand même",
+      "stay": "Annuler"
+    }
   }
 }

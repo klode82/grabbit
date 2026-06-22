@@ -16,6 +16,9 @@ const State = {
   outputContainer: 'mp4',
   queueItems: [],
   queueStats: { total: 0, pending: 0, active: 0, completed: 0, error: 0 },
+  // Phase 9: true while a single-video or playlist analysis is in flight.
+  // Used by requestClose() to warn before quitting mid-analysis.
+  analyzing: false,
   playlistInfo: null,
   playlistEntries:  [],
   playlistSelected: new Set(),
@@ -120,6 +123,63 @@ function showDialog({ title, message, confirmText, cancelText = null, danger = f
     };
   });
 }
+
+/* ── Phase 9: close confirmation ───────────────────────────────────────────── */
+
+// True when quitting now would interrupt real work: a download actively
+// streaming, or an analysis (single or playlist) in flight. Queued PENDING /
+// PAUSED items are NOT counted — the queue is persisted and resumes on the
+// next launch, so leaving them behind loses nothing.
+function isAppBusy() {
+  const active = State.queueStats?.active || 0;
+  return State.analyzing === true || active > 0;
+}
+
+// Single funnel for every close path (custom title-bar X button and the
+// OS-level close intercepted by the Python `closing` event). Shows the inline
+// confirmation only when busy; otherwise quits straight away, preserving the
+// original click-to-close behaviour.
+async function requestClose() {
+  if (isAppBusy()) {
+    const active = State.queueStats?.active || 0;
+    let message;
+    if (State.analyzing && active > 0) {
+      message = I18N.t('close.confirm.both', { n: active });
+    } else if (active > 0) {
+      message = I18N.t('close.confirm.active', { n: active });
+    } else {
+      message = I18N.t('close.confirm.analyzing');
+    }
+    const ok = await showDialog({
+      title:       I18N.t('close.confirm.title'),
+      message,
+      confirmText: I18N.t('close.confirm.quit'),
+      cancelText:  I18N.t('close.confirm.stay'),
+      danger:      true,
+    });
+    if (!ok) return;
+  }
+  try {
+    if (window.pywebview?.api?.close_window) await window.pywebview.api.close_window();
+  } catch { /* nothing else we can do — the window is going away */ }
+}
+
+// Reachable from inline onclick and from Python evaluate_js (Qt WebEngine does
+// not promote top-level declarations to window reliably, so assign explicitly).
+window.isAppBusy   = isAppBusy;
+window.requestClose = requestClose;
+
+// Fire a native OS notification only when GRABBIT is NOT focused — i.e. the
+// user is looking at something else (minimized or another window). When the
+// app has focus the in-app toast is enough, so a banner would just be noise.
+// document.hasFocus() is queried live at call time: no listeners, no state.
+function notifyIfBackground(body) {
+  if (State.settings?.notify_on_complete === false) return;
+  if (document.hasFocus()) return;
+  try {
+    if (window.pywebview?.api?.notify) window.pywebview.api.notify('GRABBIT', body);
+  } catch { /* notifications are best-effort — never let one break the UI */ }
+}
 function toast(msg, type = 'info', duration = 3500) {
   const c = qs('#toast-container');
   const el = document.createElement('div');
@@ -204,19 +264,24 @@ async function handleAnalyze() {
   }
   resetResult();
   showSkeleton(true);
+  State.analyzing = true;
 
   try {
     const result = await API.analyze(url);
     showSkeleton(false);
 
     if (result.type === 'playlist') {
+      // handlePlaylistResult takes ownership of State.analyzing: its per-entry
+      // loop keeps it true until every entry has been analysed, then clears it.
       handlePlaylistResult(result);
     } else {
       handleVideoResult(result);
+      State.analyzing = false;
     }
   } catch (err) {
     showSkeleton(false);
     toast(parseYtdlpError(err.message), 'error');
+    State.analyzing = false;
   }
 }
 
@@ -566,8 +631,7 @@ async function addCurrentToQueue() {
 
 /* ── Queue rendering ───────────────────────────────────────────────────────── */
 function renderQueue(items, stats) {
-  State.queueStats = stats;
-  renderStats(stats);
+  renderStats(stats);   // also updates State.queueStats
   updateQueueBadge(stats.total);
 
   const list = qs('#dl-list');
@@ -702,6 +766,10 @@ function updateDlProgress(item) {
 }
 
 function renderStats(stats) {
+  // Single source of truth: every stats-bearing WS event (init, added,
+  // progress, status, queue_update) funnels through here, so keeping
+  // State.queueStats current here means isAppBusy() always sees live counts.
+  State.queueStats = stats;
   qs('#stat-total').textContent  = stats.total;
   qs('#stat-active').textContent = stats.active;
   qs('#stat-done').textContent   = stats.completed;
@@ -1272,6 +1340,7 @@ async function handlePlaylistResult(playlist) {
   }
 
   qs('#pl-format-bar')?.classList.add('analyzing');
+  State.analyzing = true;
 
   const panel = qs('#playlist-analysis');
   panel.classList.add('visible');
@@ -1305,6 +1374,7 @@ async function handlePlaylistResult(playlist) {
 
   // Analisi completata — riabilita il bar globale
   qs('#pl-format-bar')?.classList.remove('analyzing');
+  State.analyzing = false;
   renderPlaylistGlobalChips();
   progressLabel.textContent = I18N.t('playlist.done', { n: done });
 
@@ -1996,6 +2066,7 @@ function renderSettings() {
   setChk('s-sub-auto',   s.default_sub_auto);
   setChk('s-embed-subs', s.embed_subs);
   setChk('s-auto-start', s.auto_start_downloads !== false);
+  setChk('s-notify-complete', s.notify_on_complete !== false);
 
   // Chip selectors
   setChipSel('theme-chip-row',      s.theme,                 'data-theme');
@@ -2026,6 +2097,7 @@ async function saveSettingsFromForm() {
     theme:                 getChipSel('theme-chip-row', 'data-theme') ?? 'dark',
     max_concurrent:         parseInt(val('s-max-dl')) || 2,
     auto_start_downloads:   chk('s-auto-start'),
+    notify_on_complete:     chk('s-notify-complete'),
     rate_limit:            val('s-rate-limit'),
     cookies_file:          val('s-cookies'),
     proxy:                 val('s-proxy'),
@@ -2080,10 +2152,12 @@ function initWebSocket() {
     renderStats(stats);
     if (item.status === 'completed') {
       toast(I18N.t('queue.done', { title: item.title }), 'success');
+      notifyIfBackground(I18N.t('queue.done', { title: item.title }));
     }
     if (item.status === 'error') {
       const friendly = parseYtdlpError(item.error);
       toast(`${item.title}: ${friendly}`, 'error');
+      notifyIfBackground(I18N.t('queue.error', { title: item.title }));
     }
   });
 
