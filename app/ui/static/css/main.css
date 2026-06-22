@@ -1801,3 +1801,16 @@ a:hover { text-decoration: underline; }
   margin-top: 2px;
   line-height: 1.4;
 }
+
+/* Phase 9 — per-download destination override (single + playlist) */
+.dest-controls {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+}
+.dest-controls .input {
+  flex: 1;
+  min-width: 0;
+}

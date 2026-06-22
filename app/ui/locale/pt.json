@@ -15,7 +15,9 @@
     "add_queue": "Adicionar à fila",
     "drop_here": "Soltar para analisar",
     "auto_pasted": "URL colada da área de transferência",
-    "no_streams": "Ative pelo menos vídeo ou áudio"
+    "no_streams": "Ative pelo menos vídeo ou áudio",
+    "dest_folder": "Destino",
+    "dest_default": "Redefinir para a pasta padrão"
   },
   "analyze": {
     "loading": "Analisando…",
@@ -135,7 +137,11 @@
     "auto_start": "Iniciar downloads automaticamente",
     "auto_start_hint": "Se desativado, os downloads aguardam até você clicar em Retomar tudo",
     "notify_complete": "Notificar ao concluir",
-    "notify_complete_hint": "Notificação do sistema ao terminar, apenas se a janela não estiver em primeiro plano"
+    "notify_complete_hint": "Notificação do sistema ao terminar, apenas se a janela não estiver em primeiro plano",
+    "group_diagnostics": "Diagnóstico",
+    "log_label": "Registro do aplicativo",
+    "open_log_folder": "Abrir pasta de registros",
+    "log_hint": "Abre a pasta que contém grabbit.log"
   },
   "common": {
     "cancel": "Cancelar",

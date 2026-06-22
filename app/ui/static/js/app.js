@@ -14,6 +14,10 @@ const State = {
   audioEnabled:    true,
   subsEnabled:     false,
   outputContainer: 'mp4',
+  // Phase 9: per-download destination override (single + playlist). Defaults
+  // to the global output_dir at result time; the add flows fall back to the
+  // global default if it's somehow empty.
+  destDir: '',
   queueItems: [],
   queueStats: { total: 0, pending: 0, active: 0, completed: 0, error: 0 },
   // Phase 9: true while a single-video or playlist analysis is in flight.
@@ -180,6 +184,16 @@ function notifyIfBackground(body) {
     if (window.pywebview?.api?.notify) window.pywebview.api.notify('GRABBIT', body);
   } catch { /* notifications are best-effort — never let one break the UI */ }
 }
+
+// Phase 9: set the per-download destination and reflect it in both result
+// panels (single + playlist). One source of truth (State.destDir); the two
+// readonly inputs are just displays kept in sync.
+function setDestDir(path) {
+  State.destDir = path || '';
+  const shown = State.destDir || State.settings?.output_dir || '';
+  const v = qs('#dest-dir-video'); if (v) v.value = shown;
+  const p = qs('#dest-dir-pl');    if (p) p.value = shown;
+}
 function toast(msg, type = 'info', duration = 3500) {
   const c = qs('#toast-container');
   const el = document.createElement('div');
@@ -310,6 +324,7 @@ function showSkeleton(visible) {
 /* ── Video result ──────────────────────────────────────────────────────────── */
 function handleVideoResult(result) {
   State.currentResult = result;
+  setDestDir(State.settings.output_dir);   // start from the global default
 
   const thumb = qs('#result-thumb');
   if (result.thumbnail) {
@@ -597,7 +612,7 @@ async function addCurrentToQueue() {
 
   const options = {
     thumbnail:            result.thumbnail,
-    output_dir:           State.settings.output_dir,
+    output_dir:           State.destDir || State.settings.output_dir,
     merge_output_format:  State.outputContainer || 'mp4',
   };
 
@@ -1310,6 +1325,7 @@ function updateGlobalFormatBadge(type, label) {
 /* ── Playlist flow ──────────────────────────────────────────────────────────── */
 async function handlePlaylistResult(playlist) {
   State.playlistInfo      = playlist;
+  setDestDir(State.settings.output_dir);   // start from the global default
   State.playlistEntries   = [];
   State.playlistSelected  = new Set(playlist.entries.map(e => e.id));
   State.plEntrySelections = {};
@@ -1916,7 +1932,7 @@ async function addPlaylistToQueue() {
     const sel  = State.plEntrySelections[eid] || {};
     const opts = {
       thumbnail:           entry.thumbnail,
-      output_dir:          State.settings.output_dir,
+      output_dir:          State.destDir || State.settings.output_dir,
       merge_output_format: State.outputContainer || 'mp4',
     };
     if (State.plVideoEnabled && sel.video) opts.format_video = sel.video;
@@ -2590,6 +2606,24 @@ document.addEventListener('DOMContentLoaded', async () => {
         const path = await window.pywebview.api.pick_folder();
         if (path) qs('#s-output-dir').value = path;
       } catch {}
+    });
+
+    // ── Per-download destination override (single + playlist) ───────────────
+    const pickDest = async () => {
+      if (!window.pywebview?.api?.pick_folder) return;
+      try {
+        const path = await window.pywebview.api.pick_folder();
+        if (path) setDestDir(path);
+      } catch {}
+    };
+    qs('#dest-browse-video')?.addEventListener('click', pickDest);
+    qs('#dest-browse-pl')?.addEventListener('click', pickDest);
+    qs('#dest-reset-video')?.addEventListener('click', () => setDestDir(State.settings.output_dir));
+    qs('#dest-reset-pl')?.addEventListener('click',    () => setDestDir(State.settings.output_dir));
+
+    // ── Diagnostics: open the log folder in the system file manager ─────────
+    qs('#open-log-folder-btn')?.addEventListener('click', () => {
+      try { window.pywebview?.api?.open_log_folder?.(); } catch {}
     });
 
     // ── Template tokens: click to insert at cursor ──────────────────────────

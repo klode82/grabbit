@@ -264,14 +264,15 @@ grabbit/
 
 ---
 
-### 🚧 Phase 9 — Notifiche & Sistema
+### ✅ Phase 9 — Notifiche & Sistema
 > Integrazione con l'OS.
 
 - [x] **Conferma chiusura** — dialog inline se download attivo o analisi in corso; intercetta sia il pulsante X sia la chiusura OS (Alt+F4 / Cmd+Q) via handler `closing` → `requestClose()`. Item solo in coda (PENDING/PAUSED) esclusi dal trigger perché la coda è persistente. `State.queueStats` centralizzato in `renderStats` come unica fonte live
-- [ ] Notifica di sistema nativa al completamento download (`plyer` o pywebview API)
-- [ ] Icona tray su Windows/macOS con menu contestuale (minimizza in background)
-- [ ] Apertura automatica cartella di destinazione (opzionale, configurabile)
-- [ ] Log errori scaricabile da UI
+- [x] **Notifica di sistema** al completamento/errore — primitivo nativo `app/core/notifier.py` (osascript macOS · notify-send Linux · winotify Windows) esposto via `GrabbitAPI.notify`; la decisione è nel frontend (handler WS `status`) e scatta solo se `!document.hasFocus()`, cioè app minimizzata o in background. Testo riusato da `queue.done`/`queue.error` via I18N. Toggle `notify_on_complete` in Impostazioni (default ON)
+- [x] **Override cartella di destinazione** (singolo + playlist) — selettore "Destinazione" in entrambi i pannelli risultato, precompilato col default globale e modificabile via `pick_folder`; la cartella scelta vale per tutti i video selezionati di una playlist. Stato in `State.destDir`, fallback al default globale negli `add` flow; campo readonly per evitare percorsi inesistenti. Backend già pronto (`output_dir` per-item, template incluso). *(feature emersa in corso, non in piano originale)*
+- [x] **Log accessibile da UI** — sezione "Diagnostica" in Impostazioni con bottone **Apri cartella log** → `GrabbitAPI.open_log_folder()`, che riusa `open_folder(get_log_path())` (seleziona il file su macOS/Windows, apre la cartella su Linux). Nessuna logica di sistema nuova
+
+> **Non incluse in questa fase:** **icona tray** → spostata a Phase 10 (richiede codice nativo per-piattaforma); **apertura automatica cartella** → scartata, sostituita dall'override destinazione manuale.
 
 ---
 
@@ -284,6 +285,7 @@ grabbit/
   - Linux: `AppImage` o `tar.gz`
 - [ ] Script di build cross-platform (`build.py`)
 - [ ] Investigare `frameless=True` su Windows (su Linux causa segfault con Qt)
+- [ ] **Icona tray** con menu contestuale (Mostra/Nascondi, Esci; minimizza in background) — *rimandata dalla Phase 9*: Qt `QSystemTrayIcon` su Linux, nativo (NSStatusItem / win32) o `pystray` su macOS/Windows
 - [ ] README utente finale
 - [ ] CHANGELOG
 - [ ] Prima release `v1.0.0`

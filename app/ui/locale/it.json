@@ -15,7 +15,9 @@
     "add_queue": "Aggiungi alla coda",
     "drop_here": "Rilascia per analizzare",
     "auto_pasted": "URL incollato dagli appunti",
-    "no_streams": "Attiva almeno video o audio"
+    "no_streams": "Attiva almeno video o audio",
+    "dest_folder": "Destinazione",
+    "dest_default": "Ripristina cartella predefinita"
   },
   "analyze": {
     "loading": "Analisi in corso…",
@@ -135,7 +137,11 @@
     "auto_start": "Avvia download automaticamente",
     "auto_start_hint": "Se disattivato, i download restano in attesa finché non premi Resume All",
     "notify_complete": "Notifica al completamento",
-    "notify_complete_hint": "Notifica di sistema a fine download, solo se la finestra non è in primo piano"
+    "notify_complete_hint": "Notifica di sistema a fine download, solo se la finestra non è in primo piano",
+    "group_diagnostics": "Diagnostica",
+    "log_label": "Log applicazione",
+    "open_log_folder": "Apri cartella log",
+    "log_hint": "Apre la cartella che contiene grabbit.log"
   },
   "common": {
     "cancel": "Annulla",

@@ -203,6 +203,15 @@
 
         </div>
 
+        <div class="format-container-row" id="dest-row-pl" style="margin-bottom:10px">
+          <span class="format-section-title" data-i18n="download.dest_folder">Destination</span>
+          <div class="dest-controls">
+            <input class="input" type="text" id="dest-dir-pl" readonly>
+            <button class="btn btn-secondary small" id="dest-browse-pl" type="button" data-i18n="settings.browse">Browse</button>
+            <button class="btn btn-ghost small" id="dest-reset-pl" type="button" data-i18n-title="download.dest_default" title="Default">↺</button>
+          </div>
+        </div>
+
         <div style="display:flex;gap:8px;margin-bottom:10px">
           <button class="btn btn-ghost small" id="playlist-select-all" data-i18n="playlist.select_all">Select all</button>
           <button class="btn btn-ghost small" id="playlist-deselect-all" data-i18n="playlist.deselect_all">Deselect all</button>
@@ -263,6 +272,14 @@
               <div class="format-grid">
                 <button class="format-chip selected" id="container-mp4" onclick="selectContainer('mp4')">MP4</button>
                 <button class="format-chip" id="container-mkv" onclick="selectContainer('mkv')">MKV</button>
+              </div>
+            </div>
+            <div class="format-container-row" id="dest-row-video">
+              <span class="format-section-title" data-i18n="download.dest_folder">Destination</span>
+              <div class="dest-controls">
+                <input class="input" type="text" id="dest-dir-video" readonly>
+                <button class="btn btn-secondary small" id="dest-browse-video" type="button" data-i18n="settings.browse">Browse</button>
+                <button class="btn btn-ghost small" id="dest-reset-video" type="button" data-i18n-title="download.dest_default" title="Default">↺</button>
               </div>
             </div>
           </div>
@@ -616,6 +633,19 @@
               <label class="settings-label" for="s-proxy" data-i18n="settings.proxy">Proxy</label>
               <input class="input" type="text" id="s-proxy" placeholder="socks5://127.0.0.1:1080">
             </div>
+          </div>
+        </div>
+
+        <!-- DIAGNOSTICS -->
+        <div class="settings-section">
+          <div class="settings-section-title" data-i18n="settings.group_diagnostics">Diagnostics</div>
+          <div class="settings-field">
+            <label class="settings-label" data-i18n="settings.log_label">Application log</label>
+            <div style="display:flex;gap:8px;align-items:center;margin-top:4px">
+              <button class="btn btn-secondary" id="open-log-folder-btn" type="button"
+                      data-i18n="settings.open_log_folder">Open log folder</button>
+            </div>
+            <span class="settings-hint" data-i18n="settings.log_hint">Opens the folder containing grabbit.log</span>
           </div>
         </div>
 

@@ -15,7 +15,9 @@
     "add_queue": "Zur Warteschlange",
     "drop_here": "Zum Analysieren ablegen",
     "auto_pasted": "URL aus der Zwischenablage eingefügt",
-    "no_streams": "Mindestens Video oder Audio aktivieren"
+    "no_streams": "Mindestens Video oder Audio aktivieren",
+    "dest_folder": "Zielordner",
+    "dest_default": "Auf Standardordner zurücksetzen"
   },
   "analyze": {
     "loading": "Analyse läuft…",
@@ -135,7 +137,11 @@
     "auto_start": "Downloads automatisch starten",
     "auto_start_hint": "Falls deaktiviert, warten Downloads bis du \"Alle fortsetzen\" drückst",
     "notify_complete": "Benachrichtigung bei Abschluss",
-    "notify_complete_hint": "Systembenachrichtigung nach Abschluss, nur wenn das Fenster nicht im Vordergrund ist"
+    "notify_complete_hint": "Systembenachrichtigung nach Abschluss, nur wenn das Fenster nicht im Vordergrund ist",
+    "group_diagnostics": "Diagnose",
+    "log_label": "Anwendungsprotokoll",
+    "open_log_folder": "Protokollordner öffnen",
+    "log_hint": "Öffnet den Ordner mit grabbit.log"
   },
   "common": {
     "cancel": "Abbrechen",

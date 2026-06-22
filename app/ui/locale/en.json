@@ -15,7 +15,9 @@
     "add_queue": "Add to queue",
     "drop_here": "Drop to analyze",
     "auto_pasted": "URL pasted from clipboard",
-    "no_streams": "Enable at least video or audio"
+    "no_streams": "Enable at least video or audio",
+    "dest_folder": "Destination",
+    "dest_default": "Reset to default folder"
   },
   "analyze": {
     "loading": "Analyzing URL…",
@@ -135,7 +137,11 @@
     "auto_start": "Start downloads automatically",
     "auto_start_hint": "If disabled, downloads wait in queue until you press Resume All",
     "notify_complete": "Notify on completion",
-    "notify_complete_hint": "System notification when a download finishes, only if the window isn't focused"
+    "notify_complete_hint": "System notification when a download finishes, only if the window isn't focused",
+    "group_diagnostics": "Diagnostics",
+    "log_label": "Application log",
+    "open_log_folder": "Open log folder",
+    "log_hint": "Opens the folder containing grabbit.log"
   },
   "common": {
     "cancel": "Cancel",

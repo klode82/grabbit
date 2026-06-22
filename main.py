@@ -156,6 +156,15 @@ class GrabbitAPI:
         from app.core.logger import get_log_path
         return get_log_path()
 
+    def open_log_folder(self) -> None:
+        """Open the system file manager at GRABBIT's log folder.
+
+        Reuses open_folder(), which selects the file itself on macOS/Windows
+        and opens the containing directory on Linux.
+        """
+        from app.core.logger import get_log_path
+        self.open_folder(get_log_path())
+
     def notify(self, title: str, body: str) -> None:
         """Show a native OS notification.
 

@@ -15,7 +15,9 @@
     "add_queue": "Ajouter à la file",
     "drop_here": "Déposer pour analyser",
     "auto_pasted": "URL collée depuis le presse-papiers",
-    "no_streams": "Activez au moins la vidéo ou l'audio"
+    "no_streams": "Activez au moins la vidéo ou l'audio",
+    "dest_folder": "Destination",
+    "dest_default": "Réinitialiser au dossier par défaut"
   },
   "analyze": {
     "loading": "Analyse en cours…",
@@ -135,7 +137,11 @@
     "auto_start": "Démarrer automatiquement",
     "auto_start_hint": "Si désactivé, les téléchargements attendent jusqu'à ce que vous appuyiez sur Reprendre tout",
     "notify_complete": "Notifier à la fin",
-    "notify_complete_hint": "Notification système à la fin, uniquement si la fenêtre n'est pas au premier plan"
+    "notify_complete_hint": "Notification système à la fin, uniquement si la fenêtre n'est pas au premier plan",
+    "group_diagnostics": "Diagnostic",
+    "log_label": "Journal de l'application",
+    "open_log_folder": "Ouvrir le dossier du journal",
+    "log_hint": "Ouvre le dossier contenant grabbit.log"
   },
   "common": {
     "cancel": "Annuler",
