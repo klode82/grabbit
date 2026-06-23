@@ -5,7 +5,7 @@
 <p align="center">
   A clean, fast desktop <strong>video download manager</strong> built on top of
   <a href="https://github.com/yt-dlp/yt-dlp">yt-dlp</a> — single videos or whole
-  playlists, with a real download queue, native notifications, and a localized interface. 🐰
+  playlists, with a real download queue, native notifications, and a localized interface.
 </p>
 
 <p align="center">
