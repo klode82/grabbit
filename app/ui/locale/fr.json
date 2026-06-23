@@ -141,7 +141,13 @@
     "group_diagnostics": "Diagnostic",
     "log_label": "Journal de l'application",
     "open_log_folder": "Ouvrir le dossier du journal",
-    "log_hint": "Ouvre le dossier contenant grabbit.log"
+    "log_hint": "Ouvre le dossier contenant grabbit.log",
+    "group_ffmpeg": "FFmpeg",
+    "ffmpeg_path": "Chemin de FFmpeg",
+    "ffmpeg_path_ph": "Vide = détection automatique",
+    "ffmpeg_hint": "Laissez vide pour le détecter automatiquement sur le système",
+    "ffmpeg_detected": "Détecté : {path}",
+    "ffmpeg_missing": "Introuvable"
   },
   "common": {
     "cancel": "Annuler",
@@ -183,5 +189,9 @@
       "quit": "Quitter quand même",
       "stay": "Annuler"
     }
+  },
+  "ffmpeg": {
+    "banner": "FFmpeg introuvable : installez-le ou définissez son chemin dans les Paramètres.",
+    "banner_action": "Ouvrir les Paramètres"
   }
 }

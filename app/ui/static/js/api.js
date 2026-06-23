@@ -84,6 +84,10 @@ window.API = (() => {
     return _request('GET', '/api/settings');
   }
 
+  function getFfmpegInfo() {
+    return _request('GET', '/api/ffmpeg');
+  }
+
   function saveSettings(patch) {
     return _request('POST', '/api/settings', patch);
   }
@@ -161,6 +165,7 @@ window.API = (() => {
     clearCompleted,
     clearAll,
     getSettings,
+    getFfmpegInfo,
     saveSettings,
     resetSettings,
     WS,

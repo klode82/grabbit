@@ -3,7 +3,6 @@ import time
 import socket
 import sys
 import os
-from pathlib import Path
 
 # Qt WebEngine reads QTWEBENGINE_CHROMIUM_FLAGS at initialisation time,
 # which happens during 'import webview' below — not inside main().
@@ -119,6 +118,29 @@ class GrabbitAPI:
             from app.core.logger import log
             log.debug("maximize_window: %s", exc)
 
+    def start_drag(self) -> None:
+        """Begin a native window move (frameless drag).
+
+        Called from JS on mousedown in the header. Because the window is made
+        frameless at the Qt level after init (not via pywebview's frameless=
+        True), pywebview's own drag handling is inactive, so we hand off to the
+        window manager's native move via QWindow.startSystemMove().
+        """
+        try:
+            from PySide6.QtWidgets import QApplication, QMainWindow
+            app = QApplication.instance()
+            if not app:
+                return
+            for w in app.topLevelWidgets():
+                if isinstance(w, QMainWindow) and w.isVisible():
+                    handle = w.windowHandle()
+                    if handle:
+                        handle.startSystemMove()
+                    return
+        except Exception as exc:
+            from app.core.logger import log
+            log.debug("start_drag: %s", exc)
+
     def close_window(self) -> None:
         """Terminate the application immediately."""
         import os
@@ -137,6 +159,21 @@ class GrabbitAPI:
         except Exception as exc:
             from app.core.logger import log
             log.warning("pick_folder failed: %s", exc)
+            return ""
+
+    def pick_file(self) -> str:
+        """Open a native file-picker dialog and return the selected file path.
+
+        Used to let the user point GRABBIT at an ffmpeg binary. Returns an
+        empty string if the user cancels or the dialog fails.
+        """
+        try:
+            import webview as _wv
+            result = _wv.windows[0].create_file_dialog(_wv.OPEN_DIALOG)
+            return result[0] if result else ""
+        except Exception as exc:
+            from app.core.logger import log
+            log.warning("pick_file failed: %s", exc)
             return ""
 
     def get_clipboard(self) -> str:
@@ -174,7 +211,8 @@ class GrabbitAPI:
         it ignore it gracefully.
         """
         from app.core.notifier import notify as _notify
-        _icon = Path(__file__).parent / "assets" / "icon.png"
+        from app.core.paths import ASSETS_DIR
+        _icon = ASSETS_DIR / "icon.png"
         _notify(title, body, str(_icon) if _icon.exists() else None)
 
     def open_file(self, path: str) -> None:
@@ -255,8 +293,9 @@ def main() -> None:
 
     print(f"[GRABBIT] Server running at http://127.0.0.1:{port}")
 
-    # Resolve icon path — assets/ lives next to main.py
-    _icon_png = Path(__file__).parent / "assets" / "icon.png"
+    # Resolve icon path — bundled under assets/ (frozen-aware via paths.py)
+    from app.core.paths import ASSETS_DIR
+    _icon_png = ASSETS_DIR / "icon.png"
 
     window = webview.create_window(
         title="GRABBIT",

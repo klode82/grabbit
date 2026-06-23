@@ -18,3 +18,8 @@ winotify>=1.1.0; sys_platform == "win32"
 # Linux only — pywebview GUI backend (macOS e Windows usano il webview nativo del sistema)
 PySide6>=6.7.0; sys_platform == "linux"
 qtpy>=2.4.0; sys_platform == "linux"
+
+# ── Build / packaging only (Phase 10) — NOT a runtime dependency ─────────────
+# Used to produce the standalone bundle; the packaged app does not import it.
+# Install it in your build environment; it does not need to ship with releases.
+pyinstaller>=6.0

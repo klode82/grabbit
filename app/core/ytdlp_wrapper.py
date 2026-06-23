@@ -8,6 +8,7 @@ from typing import Any, Callable, Optional
 import yt_dlp
 
 from app.core.logger import log
+from app.core.ffmpeg import resolve_ffmpeg
 
 # yt-dlp injects ANSI colour codes into _speed_str / _eta_str; strip them
 # before sending to the frontend so the UI sees plain text.
@@ -498,6 +499,19 @@ class YTDLPWrapper:
             "no_warnings":          True,
             "merge_output_format":  merge_ext,
         }
+
+        # Point yt-dlp at ffmpeg explicitly (configured path → PATH → common
+        # locations). Its own PATH-based detection is unreliable in a frozen/
+        # AppImage context, which is why a system ffmpeg that works in a
+        # terminal can still be reported as "not installed" by the packaged
+        # app. If unresolved, leave the key unset so yt-dlp can still try PATH.
+        _ffmpeg = resolve_ffmpeg()
+        if _ffmpeg:
+            ydl_opts["ffmpeg_location"] = _ffmpeg
+            log.debug("Using ffmpeg at %s", _ffmpeg)
+        else:
+            log.warning("ffmpeg not found (configured, PATH, or common locations)")
+
         if use_overwrite:
             ydl_opts["overwrites"] = True
 

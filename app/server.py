@@ -1,4 +1,3 @@
-from pathlib import Path
 import asyncio
 
 from fastapi import FastAPI
@@ -6,8 +5,8 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.core.paths import UI_DIR
 
-UI_DIR = Path(__file__).parent / "ui"
 STATIC_DIR = UI_DIR / "static"
 LOCALE_DIR = UI_DIR / "locale"
 

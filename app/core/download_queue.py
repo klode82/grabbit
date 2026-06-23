@@ -247,13 +247,18 @@ class DownloadQueue:
         self._save_queue()
 
     def resume_all(self) -> None:
-        """Resume the whole queue."""
+        """Resume the whole queue: un-pause any PAUSED items and start any
+        PENDING ones (e.g. items added while auto-start was off)."""
         self.is_paused = False
         with self._lock:
             paused = [i for i in self._items.values()
                       if i.status == Status.PAUSED]
         for item in paused:
             self.resume(item.id)
+        # Kick the scheduler unconditionally: when nothing was PAUSED (the
+        # auto-start-off case), the loop above starts nothing, so PENDING items
+        # would otherwise never run.
+        self._schedule()
 
     def clear_completed(self) -> int:
         """Remove all COMPLETED items. Returns the number removed."""

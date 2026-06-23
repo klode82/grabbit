@@ -141,7 +141,13 @@
     "group_diagnostics": "Diagnostica",
     "log_label": "Log applicazione",
     "open_log_folder": "Apri cartella log",
-    "log_hint": "Apre la cartella che contiene grabbit.log"
+    "log_hint": "Apre la cartella che contiene grabbit.log",
+    "group_ffmpeg": "FFmpeg",
+    "ffmpeg_path": "Percorso FFmpeg",
+    "ffmpeg_path_ph": "Vuoto = rilevamento automatico",
+    "ffmpeg_hint": "Lascia vuoto per rilevarlo automaticamente nel sistema",
+    "ffmpeg_detected": "Rilevato: {path}",
+    "ffmpeg_missing": "Non trovato"
   },
   "common": {
     "cancel": "Annulla",
@@ -183,5 +189,9 @@
       "quit": "Esci comunque",
       "stay": "Annulla"
     }
+  },
+  "ffmpeg": {
+    "banner": "FFmpeg non trovato: installalo o imposta il percorso nelle Impostazioni.",
+    "banner_action": "Apri Impostazioni"
   }
 }

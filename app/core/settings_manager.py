@@ -32,6 +32,7 @@ _DEFAULTS: dict[str, Any] = {
     "rate_limit": "",                   # e.g. "1M", empty = unlimited
     "cookies_file": "",                 # path to Netscape cookies file
     "proxy": "",                        # e.g. "socks5://127.0.0.1:1080"
+    "ffmpeg_path": "",                  # explicit ffmpeg binary; empty = auto-detect
 }
 
 

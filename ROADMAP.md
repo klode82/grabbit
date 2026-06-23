@@ -276,16 +276,22 @@ grabbit/
 
 ---
 
-### 🔲 Phase 10 — Packaging & Release
+### 🚧 Phase 10 — Packaging & Release
 > Prima distribuzione pubblica.
 
-- [ ] Build **PyInstaller**: `--onefile` o `--onedir`
-  - Windows: `.exe` standalone
-  - macOS: `.app` bundle
-  - Linux: `AppImage` o `tar.gz`
-- [ ] Script di build cross-platform (`build.py`)
+**Build & packaging — ✅ Linux (onedir → AppImage)**
+- [x] Resolver risorse *frozen-aware* (`app/core/paths.py`): usa `sys._MEIPASS` quando impacchettato, root del progetto in sviluppo
+- [x] Build **PyInstaller** onedir (`GRABBIT.spec`) — funzionante e testata su Linux
+  - [ ] Windows: `.exe` standalone *(richiede macchina/CI Windows)*
+  - [ ] macOS: `.app` bundle *(richiede macchina/CI macOS)*
+- [x] Script di build (`build.py`): build → prune Qt → AppImage, con flag `--no-build` / `--no-prune` / `--appimage`
+- [x] **Snellimento bundle**: rimosso `collect_submodules('qtpy')`, filtrati i locale WebEngine alle 6 lingue, pruning curato di librerie + moduli QML inutili → da **628 MB a ~454 MB** estratti
+- [x] **AppImage** Linux via `appimagetool` (squashfs xz) — wrapping dell'onedir snellito
+- [x] **Trascinamento finestra frameless** via `startSystemMove()` nativo (mousedown sull'header, pulsanti esclusi)
 - [ ] Investigare `frameless=True` su Windows (su Linux causa segfault con Qt)
 - [ ] **Icona tray** con menu contestuale (Mostra/Nascondi, Esci; minimizza in background) — *rimandata dalla Phase 9*: Qt `QSystemTrayIcon` su Linux, nativo (NSStatusItem / win32) o `pystray` su macOS/Windows
+
+**Release**
 - [ ] README utente finale
 - [ ] CHANGELOG
 - [ ] Prima release `v1.0.0`
@@ -295,9 +301,12 @@ grabbit/
 ### 🔲 Phase 11 — Controllo e Gestione yt-dlp & FFmpeg
 > L'app deve sapere dove sono le dipendenze e guidare l'utente se mancano.
 
-**Rilevamento all'avvio**
-- [ ] Verifica `ffmpeg` e `yt-dlp` nel PATH (o path configurate)
-- [ ] Banner/dialog con istruzioni contestuali se mancanti
+**Rilevamento all'avvio — ✅ FFmpeg (anticipato in Phase 10)**
+- [x] Rilevamento `ffmpeg` autonomo a cascata: percorso configurato → PATH (`shutil.which`) → PATH della shell di login (`$SHELL -lic`, recupera aggiunte pyenv/.bashrc/.profile) → posizioni note. In `app/core/ffmpeg.py`
+- [x] Override manuale del percorso in Settings (sezione FFmpeg) + picker file nativo
+- [x] Banner sotto l'header + riga di stato quando ffmpeg non è raggiungibile
+- [x] `ffmpeg_location` passato a yt-dlp dal wrapper (risolve il "ffmpeg non trovato" nell'app impacchettata)
+- [ ] Verifica `yt-dlp` (è impacchettato da PyInstaller; manca il check esplicito a runtime)
 - [ ] Blocco soft se manca FFmpeg (funzioni base ok), blocco hard se manca yt-dlp
 
 **Windows — bundling binari**

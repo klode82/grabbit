@@ -141,7 +141,13 @@
     "group_diagnostics": "Diagnostics",
     "log_label": "Application log",
     "open_log_folder": "Open log folder",
-    "log_hint": "Opens the folder containing grabbit.log"
+    "log_hint": "Opens the folder containing grabbit.log",
+    "group_ffmpeg": "FFmpeg",
+    "ffmpeg_path": "FFmpeg path",
+    "ffmpeg_path_ph": "Empty = auto-detect",
+    "ffmpeg_hint": "Leave empty to detect it automatically on your system",
+    "ffmpeg_detected": "Detected: {path}",
+    "ffmpeg_missing": "Not found"
   },
   "common": {
     "cancel": "Cancel",
@@ -183,5 +189,9 @@
       "quit": "Quit anyway",
       "stay": "Cancel"
     }
+  },
+  "ffmpeg": {
+    "banner": "FFmpeg not found: install it or set its path in Settings.",
+    "banner_action": "Open Settings"
   }
 }

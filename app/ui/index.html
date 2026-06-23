@@ -55,6 +55,13 @@
     </button>
   </nav>
 
+  <!-- FFmpeg missing warning (shown only when ffmpeg can't be located) -->
+  <div class="ffmpeg-banner hidden" id="ffmpeg-banner">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
+    <span data-i18n="ffmpeg.banner">FFmpeg not found: install it or set its path in Settings.</span>
+    <button class="ffmpeg-banner-btn" type="button" onclick="switchTab('settings')" data-i18n="ffmpeg.banner_action">Open Settings</button>
+  </div>
+
   <!-- ── Content ────────────────────────────────────────────────────────── -->
   <main class="app-content">
 
@@ -633,6 +640,22 @@
               <label class="settings-label" for="s-proxy" data-i18n="settings.proxy">Proxy</label>
               <input class="input" type="text" id="s-proxy" placeholder="socks5://127.0.0.1:1080">
             </div>
+          </div>
+        </div>
+
+        <!-- FFMPEG -->
+        <div class="settings-section">
+          <div class="settings-section-title" data-i18n="settings.group_ffmpeg">FFmpeg</div>
+          <div class="settings-field">
+            <label class="settings-label" data-i18n="settings.ffmpeg_path">FFmpeg path</label>
+            <div class="dest-controls">
+              <input class="input" type="text" id="s-ffmpeg-path"
+                     data-i18n-placeholder="settings.ffmpeg_path_ph">
+              <button class="btn btn-secondary small" id="ffmpeg-browse-btn" type="button"
+                      data-i18n="settings.browse">Browse</button>
+            </div>
+            <span class="settings-hint" data-i18n="settings.ffmpeg_hint">Leave empty to detect automatically</span>
+            <div class="ffmpeg-status" id="ffmpeg-status"></div>
           </div>
         </div>
 

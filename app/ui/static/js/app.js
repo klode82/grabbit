@@ -194,6 +194,27 @@ function setDestDir(path) {
   const v = qs('#dest-dir-video'); if (v) v.value = shown;
   const p = qs('#dest-dir-pl');    if (p) p.value = shown;
 }
+
+// FFmpeg detection: updates the settings status line and toggles the header
+// banner. Called on startup and after saving settings (the path may change).
+async function refreshFfmpegStatus() {
+  let info;
+  try { info = await API.getFfmpegInfo(); } catch { return; }
+
+  const statusEl = qs('#ffmpeg-status');
+  if (statusEl) {
+    if (info.found) {
+      statusEl.textContent = I18N.t('settings.ffmpeg_detected', { path: info.path });
+      statusEl.className = 'ffmpeg-status ok';
+    } else {
+      statusEl.textContent = I18N.t('settings.ffmpeg_missing');
+      statusEl.className = 'ffmpeg-status err';
+    }
+  }
+  const banner = qs('#ffmpeg-banner');
+  if (banner) banner.classList.toggle('hidden', !!info.found);
+}
+window.refreshFfmpegStatus = refreshFfmpegStatus;
 function toast(msg, type = 'info', duration = 3500) {
   const c = qs('#toast-container');
   const el = document.createElement('div');
@@ -2079,6 +2100,7 @@ function renderSettings() {
   set('s-rate-limit',   s.rate_limit);
   set('s-cookies',      s.cookies_file);
   set('s-proxy',        s.proxy);
+  set('s-ffmpeg-path',  s.ffmpeg_path);
   setChk('s-sub-auto',   s.default_sub_auto);
   setChk('s-embed-subs', s.embed_subs);
   setChk('s-auto-start', s.auto_start_downloads !== false);
@@ -2117,11 +2139,13 @@ async function saveSettingsFromForm() {
     rate_limit:            val('s-rate-limit'),
     cookies_file:          val('s-cookies'),
     proxy:                 val('s-proxy'),
+    ffmpeg_path:           val('s-ffmpeg-path').trim(),
   };
 
   try {
     State.settings = await API.saveSettings(patch);
     await I18N.setLocale(State.settings.language);
+    refreshFfmpegStatus();          // path may have changed — re-check
     toast(I18N.t('settings.saved'), 'success');
   } catch (err) {
     toast(err.message, 'error');
@@ -2530,6 +2554,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Load persisted settings and apply theme + locale before rendering anything.
     await loadSettings();
 
+    // Check ffmpeg availability → settings status line + header banner.
+    refreshFfmpegStatus();
+
     // Register WebSocket event handlers, then open the connection.
     // The WS manager handles reconnection automatically if the connection drops.
     initWebSocket();
@@ -2624,6 +2651,23 @@ document.addEventListener('DOMContentLoaded', async () => {
     // ── Diagnostics: open the log folder in the system file manager ─────────
     qs('#open-log-folder-btn')?.addEventListener('click', () => {
       try { window.pywebview?.api?.open_log_folder?.(); } catch {}
+    });
+
+    // ── FFmpeg: pick the binary manually ────────────────────────────────────
+    qs('#ffmpeg-browse-btn')?.addEventListener('click', async () => {
+      if (!window.pywebview?.api?.pick_file) return;
+      try {
+        const path = await window.pywebview.api.pick_file();
+        if (path) qs('#s-ffmpeg-path').value = path;
+      } catch {}
+    });
+
+    // ── Frameless window drag: mousedown on the header starts a native move.
+    // Buttons (window controls) are excluded so they still click normally.
+    qs('.app-header')?.addEventListener('mousedown', (e) => {
+      if (e.button !== 0) return;              // left button only
+      if (e.target.closest('button')) return;  // let the window controls work
+      try { window.pywebview?.api?.start_drag?.(); } catch {}
     });
 
     // ── Template tokens: click to insert at cursor ──────────────────────────

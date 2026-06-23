@@ -141,7 +141,13 @@
     "group_diagnostics": "Diagnose",
     "log_label": "Anwendungsprotokoll",
     "open_log_folder": "Protokollordner öffnen",
-    "log_hint": "Öffnet den Ordner mit grabbit.log"
+    "log_hint": "Öffnet den Ordner mit grabbit.log",
+    "group_ffmpeg": "FFmpeg",
+    "ffmpeg_path": "FFmpeg-Pfad",
+    "ffmpeg_path_ph": "Leer = automatische Erkennung",
+    "ffmpeg_hint": "Leer lassen für automatische Erkennung im System",
+    "ffmpeg_detected": "Erkannt: {path}",
+    "ffmpeg_missing": "Nicht gefunden"
   },
   "common": {
     "cancel": "Abbrechen",
@@ -183,5 +189,9 @@
       "quit": "Trotzdem beenden",
       "stay": "Abbrechen"
     }
+  },
+  "ffmpeg": {
+    "banner": "FFmpeg nicht gefunden: installiere es oder lege den Pfad in den Einstellungen fest.",
+    "banner_action": "Einstellungen öffnen"
   }
 }

@@ -10,6 +10,7 @@ from pydantic import BaseModel
 from app.core.ytdlp_wrapper import YTDLPWrapper
 from app.core.download_queue import queue, Status
 from app.core.settings_manager import settings
+from app.core.ffmpeg import ffmpeg_info
 
 router = APIRouter()
 _wrapper = YTDLPWrapper()
@@ -234,6 +235,13 @@ async def queue_stats() -> Any:
 @router.get("/settings")
 async def get_settings() -> Any:
     return settings.get_all()
+
+
+@router.get("/ffmpeg")
+async def get_ffmpeg() -> Any:
+    """Report whether ffmpeg can be located, and where (for the UI banner and
+    the settings status line)."""
+    return ffmpeg_info()
 
 
 # Sync queue concurrency with saved settings at startup
