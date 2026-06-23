@@ -102,30 +102,48 @@ class GrabbitAPI:
 
     def maximize_window(self) -> None:
         """Toggle maximize / restore the application window."""
-        try:
-            from PySide6.QtWidgets import QApplication, QMainWindow
-            app = QApplication.instance()
-            if not app:
-                return
-            for w in app.topLevelWidgets():
-                if isinstance(w, QMainWindow) and w.isVisible():
-                    if w.isMaximized():
-                        w.showNormal()
-                    else:
-                        w.showMaximized()
+        # Linux: the window is frameless at the Qt level, so drive Qt directly.
+        if sys.platform == "linux":
+            try:
+                from PySide6.QtWidgets import QApplication, QMainWindow
+                app = QApplication.instance()
+                if not app:
                     return
+                for w in app.topLevelWidgets():
+                    if isinstance(w, QMainWindow) and w.isVisible():
+                        if w.isMaximized():
+                            w.showNormal()
+                        else:
+                            w.showMaximized()
+                        return
+            except Exception as exc:
+                from app.core.logger import log
+                log.debug("maximize_window (qt): %s", exc)
+            return
+
+        # Windows/macOS: pywebview's native maximize/restore.
+        try:
+            w = webview.windows[0]
+            if getattr(self, "_maximized", False):
+                w.restore()
+                self._maximized = False
+            else:
+                w.maximize()
+                self._maximized = True
         except Exception as exc:
             from app.core.logger import log
-            log.debug("maximize_window: %s", exc)
+            log.debug("maximize_window (native): %s", exc)
 
     def start_drag(self) -> None:
-        """Begin a native window move (frameless drag).
+        """Begin a native window move (frameless drag) — Linux/Qt only.
 
-        Called from JS on mousedown in the header. Because the window is made
-        frameless at the Qt level after init (not via pywebview's frameless=
-        True), pywebview's own drag handling is inactive, so we hand off to the
-        window manager's native move via QWindow.startSystemMove().
+        On Linux the window is made frameless at the Qt level after init, so we
+        hand off to the window manager's native move via startSystemMove(). On
+        Windows/macOS the frameless window is native and dragging is handled
+        differently (Stage 2), so this is a no-op there.
         """
+        if sys.platform != "linux":
+            return
         try:
             from PySide6.QtWidgets import QApplication, QMainWindow
             app = QApplication.instance()
@@ -297,6 +315,12 @@ def main() -> None:
     from app.core.paths import ASSETS_DIR
     _icon_png = ASSETS_DIR / "icon.png"
 
+    # Frameless window. On Windows/macOS pywebview's native frameless works, so
+    # we create it frameless directly. On Linux that path segfaults with the Qt
+    # backend, so there we create a normal window and strip the frame at the Qt
+    # level after init (see _set_app_icon → _apply_frameless).
+    _native_frameless = sys.platform != "linux"
+
     window = webview.create_window(
         title="GRABBIT",
         url=f"http://127.0.0.1:{port}",
@@ -304,7 +328,8 @@ def main() -> None:
         height=700,
         min_size=(720, 540),
         resizable=True,
-        # frameless=True,
+        frameless=_native_frameless,
+        easy_drag=False,          # dragging handled separately (Stage 2)
         text_select=False,
         # Expose Python functions to JavaScript via window.pywebview.api
         js_api=GrabbitAPI(),
