@@ -1,14 +1,50 @@
 from __future__ import annotations
 
 import json
+import locale as _locale
 import os
 from pathlib import Path
 from typing import Any
 
 
+_SUPPORTED_LANGS = ("it", "en", "de", "es", "fr", "pt")
+
+
+def _detect_system_language(default: str = "en") -> str:
+    """Best-effort OS UI language → one of the supported locales, else *default*.
+
+    Used only as the first-run default for the "language" setting; any value
+    already saved in settings.json always takes precedence (so a user who
+    picked a language is never overridden). Reads the standard locale
+    environment variables first (the source of truth on Linux/macOS), then
+    falls back to Python's locale module (covers Windows). LANGUAGE may hold a
+    colon-separated priority list (e.g. "it:en"), so the first supported match
+    wins; "C"/"POSIX" are ignored as they carry no real language.
+    """
+    candidates: list[str] = []
+    for env in ("LANGUAGE", "LC_ALL", "LC_MESSAGES", "LANG"):
+        val = os.environ.get(env)
+        if val and val not in ("C", "POSIX"):
+            candidates.extend(val.split(":"))
+    try:
+        import warnings
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")     # getdefaultlocale is deprecated but adequate here
+            loc = _locale.getdefaultlocale()[0]
+        if loc:
+            candidates.append(loc)
+    except Exception:
+        pass
+    for c in candidates:
+        code = c.strip().lower().replace("-", "_").split("_")[0]
+        if code in _SUPPORTED_LANGS:
+            return code
+    return default
+
+
 _DEFAULTS: dict[str, Any] = {
-    "language": "en",                   # UI language
-    "theme": "dark",                    # "dark" | "light"
+    "language": _detect_system_language(),   # first-run default = OS language if supported, else "en"
+    "theme": "light",                   # "dark" | "light"
     "output_dir": str(Path.home() / "Downloads" / "GRABBIT"),
     "max_concurrent": 2,
     "filename_template": "",             # yt-dlp outtmpl, empty = default %(title)s.%(ext)s

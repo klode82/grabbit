@@ -215,6 +215,15 @@ async function refreshFfmpegStatus() {
   if (banner) banner.classList.toggle('hidden', !!info.found);
 }
 window.refreshFfmpegStatus = refreshFfmpegStatus;
+
+// Fetch the app version and show it next to the logo.
+async function loadVersion() {
+  try {
+    const { version } = await API.getVersion();
+    const el = qs('#app-version');
+    if (el && version) el.textContent = 'v' + version;
+  } catch { /* header just shows no version if this fails */ }
+}
 function toast(msg, type = 'info', duration = 3500) {
   const c = qs('#toast-container');
   const el = document.createElement('div');
@@ -1978,7 +1987,7 @@ async function addPlaylistToQueue() {
 async function loadSettings() {
   try {
     State.settings = await API.getSettings();
-    applyTheme(State.settings.theme || 'dark');
+    applyTheme(State.settings.theme || 'light');
     await I18N.setLocale(State.settings.language || 'en');
     renderSettings();
   } catch {}
@@ -2132,7 +2141,7 @@ async function saveSettingsFromForm() {
     default_sub_auto:      chk('s-sub-auto'),
     embed_subs:            chk('s-embed-subs'),
     subtitle_format:       getChipSel('sub-format-chips') ?? 'srt',
-    theme:                 getChipSel('theme-chip-row', 'data-theme') ?? 'dark',
+    theme:                 getChipSel('theme-chip-row', 'data-theme') ?? 'light',
     max_concurrent:         parseInt(val('s-max-dl')) || 2,
     auto_start_downloads:   chk('s-auto-start'),
     notify_on_complete:     chk('s-notify-complete'),
@@ -2154,16 +2163,14 @@ async function saveSettingsFromForm() {
 
 /* ── WebSocket events ──────────────────────────────────────────────────────── */
 function initWebSocket() {
-  // Update the connection indicator dot in the header
+  // Update the connection indicator icon in the header
   API.WS.on('connected', () => {
-    const dot = qs('#ws-dot');
-    dot.className = 'ws-dot connected';
+    qs('#ws-icon').className = 'ws-icon connected';
     qs('#ws-indicator').title = I18N.t('ws.connected');
   });
 
   API.WS.on('disconnected', () => {
-    const dot = qs('#ws-dot');
-    dot.className = 'ws-dot reconnecting';
+    qs('#ws-icon').className = 'ws-icon reconnecting';
     qs('#ws-indicator').title = I18N.t('ws.reconnecting');
   });
 
@@ -2556,6 +2563,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Check ffmpeg availability → settings status line + header banner.
     refreshFfmpegStatus();
+
+    // Show the app version next to the logo.
+    loadVersion();
 
     // Register WebSocket event handlers, then open the connection.
     // The WS manager handles reconnection automatically if the connection drops.

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="dark">
+<html lang="en" data-theme="light">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -14,11 +14,18 @@
   <header class="app-header">
     <div class="logo">
       <img src="/static/img/logo_full.png" class="logo-full" alt="GRABBIT" height="36">
+      <span class="app-version" id="app-version"></span>
     </div>
     <div class="header-right">
-      <!-- WebSocket connection status dot -->
+      <!-- Connection status: wired-plug icon, coloured by state -->
       <div class="ws-indicator" id="ws-indicator" data-i18n-title="ws.connecting">
-        <span class="ws-dot" id="ws-dot"></span>
+        <span class="ws-icon" id="ws-icon">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M12 22v-5"/><path d="M9 8V2"/><path d="M15 8V2"/>
+            <path d="M18 8v5a4 4 0 0 1-4 4h-4a4 4 0 0 1-4-4V8Z"/>
+          </svg>
+        </span>
       </div>
       <!-- Custom window controls (frameless) -->
       <div class="window-controls">

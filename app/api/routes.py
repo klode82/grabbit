@@ -11,6 +11,7 @@ from app.core.ytdlp_wrapper import YTDLPWrapper
 from app.core.download_queue import queue, Status
 from app.core.settings_manager import settings
 from app.core.ffmpeg import ffmpeg_info
+from app.version import __version__
 
 router = APIRouter()
 _wrapper = YTDLPWrapper()
@@ -242,6 +243,12 @@ async def get_ffmpeg() -> Any:
     """Report whether ffmpeg can be located, and where (for the UI banner and
     the settings status line)."""
     return ffmpeg_info()
+
+
+@router.get("/version")
+async def get_version() -> Any:
+    """App version, shown in the header next to the logo."""
+    return {"version": __version__}
 
 
 # Sync queue concurrency with saved settings at startup

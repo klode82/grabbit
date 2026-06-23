@@ -137,6 +137,14 @@ a:hover { text-decoration: underline; }
   display: flex;
   align-items: center;
 }
+/* Version tag next to the logo (subtle, muted) */
+.app-version {
+  margin-left: 8px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--text-3);
+}
 /* Single combined logo image (rabbit + GRABBIT text) */
 .logo-full {
   height: 36px;
@@ -1186,16 +1194,14 @@ a:hover { text-decoration: underline; }
   padding: 4px;
   cursor: default;
 }
-.ws-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--text-3);
-  transition: background 0.4s ease;
+.ws-icon {
+  display: inline-flex;
+  color: var(--text-3);
+  transition: color 0.4s ease;
 }
-.ws-dot.connected    { background: var(--success); }
-.ws-dot.reconnecting { background: var(--warn); animation: ws-pulse 1s ease-in-out infinite; }
-.ws-dot.disconnected { background: var(--danger); }
+.ws-icon.connected    { color: var(--success); }
+.ws-icon.reconnecting { color: var(--warn); animation: ws-pulse 1s ease-in-out infinite; }
+.ws-icon.disconnected { color: var(--danger); }
 @keyframes ws-pulse {
   0%, 100% { opacity: 1; }
   50%       { opacity: 0.3; }
