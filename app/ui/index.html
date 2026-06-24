@@ -12,10 +12,12 @@
 
   <!-- ── Header ─────────────────────────────────────────────────────────── -->
   <header class="app-header">
-    <div class="logo">
+    <div class="logo pywebview-drag-region">
       <img src="/static/img/logo_full.png" class="logo-full" alt="GRABBIT" height="36">
       <span class="app-version" id="app-version"></span>
     </div>
+    <!-- Draggable empty strip between the logo and the window controls -->
+    <div class="header-spacer pywebview-drag-region"></div>
     <div class="header-right">
       <!-- Connection status: wired-plug icon, coloured by state -->
       <div class="ws-indicator" id="ws-indicator" data-i18n-title="ws.connecting">

@@ -129,7 +129,6 @@ a:hover { text-decoration: underline; }
   padding: 0 8px 0 4px;       /* SX ridotto: la trasparenza del PNG aggiunge ~4px visivi */
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
-  -webkit-app-region: drag;
 }
 .app-header * { -webkit-app-region: no-drag; }
 
@@ -137,6 +136,12 @@ a:hover { text-decoration: underline; }
   display: flex;
   align-items: center;
 }
+/* Frameless window dragging (Windows/macOS): the logo and the centre strip act
+   as drag handles; interactive controls opt out so they stay clickable. On
+   Linux this is inert (dragging is handled by the Qt startSystemMove path). */
+.header-spacer { flex: 1; align-self: stretch; }
+.logo, .header-spacer { -webkit-app-region: drag; }
+.ws-indicator, .window-controls { -webkit-app-region: no-drag; }
 /* Version tag next to the logo (subtle, muted) */
 .app-version {
   margin-left: 8px;
