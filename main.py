@@ -330,6 +330,7 @@ def main() -> None:
         resizable=True,
         frameless=_native_frameless,
         easy_drag=False,          # dragging handled separately (Stage 2)
+        background_color="#F2F2F7",   # matches the light theme — avoids a white/black flash on init
         text_select=False,
         # Expose Python functions to JavaScript via window.pywebview.api
         js_api=GrabbitAPI(),
