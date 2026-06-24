@@ -1,28 +1,34 @@
 #!/usr/bin/env python3
-"""GRABBIT build orchestrator (Linux).
+"""GRABBIT build orchestrator (Linux & Windows).
 
-Stages:
+Linux:
   1. PyInstaller onedir build from GRABBIT.spec
-  2. Prune unused Qt6 libraries from dist/ to cut size (reversible: edit
-     UNUSED_QT_MODULES below and rebuild)
+  2. Prune unused Qt6 libraries from dist/ to cut size
   3. (optional) wrap dist/GRABBIT into an AppImage  [--appimage]
 
+Windows:
+  1. PyInstaller onedir build from GRABBIT-win.spec
+  2. Package dist/GRABBIT into a versioned .zip for distribution
+
 Usage:
-  python build.py                # build + prune
-  python build.py --no-prune     # build only, keep full Qt
-  python build.py --no-build     # prune an existing dist/ (skip PyInstaller)
-  python build.py --appimage     # build + prune + AppImage
+  python build.py                # build (+ prune on Linux, + zip on Windows)
+  python build.py --no-build     # operate on an existing dist/
+  python build.py --appimage     # Linux: build + prune + AppImage
+  python build.py --no-prune     # Linux: skip Qt pruning
+  python build.py --no-zip       # Windows: skip zipping
 """
 from __future__ import annotations
 
 import argparse
 import os
+import re
 import shutil
 import subprocess
 import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
+WINDOWS = sys.platform == "win32"
 DIST = ROOT / "dist" / "GRABBIT"
 INTERNAL = DIST / "_internal"
 QT_LIB = INTERNAL / "PySide6" / "Qt" / "lib"
@@ -30,10 +36,12 @@ QT_QML = INTERNAL / "PySide6" / "Qt" / "qml"
 PYSIDE = INTERNAL / "PySide6"
 ICON = ROOT / "assets" / "icon.png"
 
-# AppImage squashfs compression. "xz" is slowest to build but smallest to ship;
-# build_appimage falls back to the default automatically if a given
-# appimagetool build doesn't accept --comp. Set to "" to always use the default.
-COMPRESSION = "xz"
+# AppImage squashfs compression. The current appimagetool bundles an mksquashfs
+# that only supports "zstd" (xz is not compiled in), so zstd is the practical
+# choice. build_appimage still falls back to the default automatically if a
+# given appimagetool rejects --comp. Set to "xz" if your mksquashfs supports it
+# (smaller output), or "" to use whatever appimagetool defaults to.
+COMPRESSION = "zstd"
 
 # ── Qt modules safe to remove for a WebEngine-Widgets app with an HTML UI ─────
 # WebEngine itself pulls Core/Gui/Widgets/Network/Qml/Quick/QmlModels/OpenGL/
@@ -80,11 +88,37 @@ def _human(n: int) -> str:
 
 
 def run_pyinstaller() -> None:
-    print(">> PyInstaller build…")
+    spec = "GRABBIT-win.spec" if WINDOWS else "GRABBIT.spec"
+    print(f">> PyInstaller build ({spec})…")
     subprocess.run(
-        [sys.executable, "-m", "PyInstaller", "GRABBIT.spec", "--clean", "--noconfirm"],
+        [sys.executable, "-m", "PyInstaller", spec, "--clean", "--noconfirm"],
         cwd=ROOT, check=True,
     )
+
+
+def app_version() -> str:
+    """Read __version__ from app/version.py (without importing the package)."""
+    try:
+        txt = (ROOT / "app" / "version.py").read_text(encoding="utf-8")
+        m = re.search(r"""__version__\s*=\s*["']([^"']+)["']""", txt)
+        if m:
+            return m.group(1)
+    except Exception:
+        pass
+    return "0.0.0"
+
+
+def make_zip() -> None:
+    """Package dist/GRABBIT into a versioned .zip for distribution (Windows)."""
+    if not DIST.is_dir():
+        print(f"!! {DIST} not found — did the build run?", file=sys.stderr)
+        return
+    out_base = ROOT / "dist" / f"GRABBIT-{app_version()}-windows-x64"
+    print(">> Zipping dist/GRABBIT…")
+    archive = shutil.make_archive(
+        str(out_base), "zip", root_dir=str(ROOT / "dist"), base_dir="GRABBIT"
+    )
+    print(f">> Zip ready: {archive}  ({Path(archive).stat().st_size / 1_000_000:.0f} MB)")
 
 
 def _real_size(f: Path) -> int:
@@ -173,7 +207,7 @@ def build_appimage() -> None:
         "Name=GRABBIT\n"
         "Exec=GRABBIT\n"
         "Icon=grabbit\n"
-        "Categories=AudioVideo;Utility;\n"
+        "Categories=AudioVideo;\n"
         "Terminal=false\n"
     )
 
@@ -208,18 +242,25 @@ def build_appimage() -> None:
 
 
 def main() -> None:
-    ap = argparse.ArgumentParser(description="Build GRABBIT (Linux).")
-    ap.add_argument("--no-build", action="store_true", help="skip PyInstaller (prune existing dist)")
-    ap.add_argument("--no-prune", action="store_true", help="keep the full Qt (no pruning)")
-    ap.add_argument("--appimage", action="store_true", help="also produce an AppImage")
+    ap = argparse.ArgumentParser(description="Build GRABBIT (Linux & Windows).")
+    ap.add_argument("--no-build", action="store_true", help="skip PyInstaller (operate on existing dist/)")
+    ap.add_argument("--no-prune", action="store_true", help="Linux: keep the full Qt (no pruning)")
+    ap.add_argument("--appimage", action="store_true", help="Linux: also produce an AppImage")
+    ap.add_argument("--no-zip", action="store_true", help="Windows: don't package the dist into a zip")
     args = ap.parse_args()
 
     if not args.no_build:
         run_pyinstaller()
-    if not args.no_prune:
-        prune()
-    if args.appimage:
-        build_appimage()
+
+    if WINDOWS:
+        if not args.no_zip:
+            make_zip()
+    else:
+        if not args.no_prune:
+            prune()
+        if args.appimage:
+            build_appimage()
+
     print(">> Done.")
 
 
