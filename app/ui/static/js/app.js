@@ -1248,7 +1248,11 @@ function initPlaylistFormatBar() {
   ['video', 'audio', 'subs'].forEach(type => {
     const header = qs(`#pl-${type}-header`);
     if (!header) return;
-    header.addEventListener('click', e => {
+    // Assignment (not addEventListener) so re-running this on every playlist
+    // load replaces the handler instead of stacking a duplicate on the same
+    // static header element — duplicates caused a click to open then
+    // immediately re-close the accordion in the same tick.
+    header.onclick = e => {
       if (e.target.closest('label')) return;
       const acc   = qs(`#pl-${type}-accordion`);
       const body  = qs(`#pl-${type}-chip-area`);
@@ -1257,7 +1261,7 @@ function initPlaylistFormatBar() {
       const isOpen = body.style.display !== 'none';
       body.style.display = isOpen ? 'none' : '';
       if (arrow) arrow.classList.toggle('open', !isOpen);
-    });
+    };
   });
 
   // Video toggle

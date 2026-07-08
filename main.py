@@ -121,7 +121,19 @@ class GrabbitAPI:
                 log.debug("maximize_window (qt): %s", exc)
             return
 
-        # Windows/macOS: pywebview's native maximize/restore.
+        # Windows: the window is frameless (FormBorderStyle.None), and WinForms'
+        # native WindowState.Maximized on a borderless form fills the monitor's
+        # full bounds instead of its work area, covering the taskbar. Emulate
+        # maximize instead by resizing/moving to the current monitor's work area.
+        if sys.platform == "win32":
+            try:
+                self._toggle_maximize_windows()
+            except Exception as exc:
+                from app.core.logger import log
+                log.debug("maximize_window (win32): %s", exc)
+            return
+
+        # macOS: pywebview's native maximize/restore.
         try:
             w = webview.windows[0]
             if getattr(self, "_maximized", False):
@@ -133,6 +145,56 @@ class GrabbitAPI:
         except Exception as exc:
             from app.core.logger import log
             log.debug("maximize_window (native): %s", exc)
+
+    def _toggle_maximize_windows(self) -> None:
+        """Windows-only soft maximize/restore that respects the taskbar.
+
+        pywebview's native maximize() sets WindowState.Maximized, which on a
+        borderless (frameless) WinForms window fills the monitor's full
+        bounds rather than its work area — there's no window chrome for
+        Windows to use when computing the maximized size, so it overlaps the
+        taskbar. Instead we resize/move the window to the current monitor's
+        work area ourselves, and restore the previous bounds on toggle-off.
+        """
+        import ctypes
+        from ctypes import wintypes
+
+        w = webview.windows[0]
+        if getattr(self, "_maximized", False):
+            x, y, width, height = self._restore_bounds
+            w.resize(width, height)
+            w.move(x, y)
+            self._maximized = False
+            return
+
+        self._restore_bounds = (w.x, w.y, w.width, w.height)
+
+        class MONITORINFO(ctypes.Structure):
+            _fields_ = [
+                ("cbSize", wintypes.DWORD),
+                ("rcMonitor", wintypes.RECT),
+                ("rcWork", wintypes.RECT),
+                ("dwFlags", wintypes.DWORD),
+            ]
+
+        MONITOR_DEFAULTTONEAREST = 2
+        form = w.native
+        hwnd = form.Handle.ToInt32()
+        monitor = ctypes.windll.user32.MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST)
+        info = MONITORINFO()
+        info.cbSize = ctypes.sizeof(MONITORINFO)
+        ctypes.windll.user32.GetMonitorInfoW(monitor, ctypes.byref(info))
+
+        scale = form._scale
+        work = info.rcWork
+        x = int(work.left / scale)
+        y = int(work.top / scale)
+        width = int((work.right - work.left) / scale)
+        height = int((work.bottom - work.top) / scale)
+
+        w.resize(width, height)
+        w.move(x, y)
+        self._maximized = True
 
     def start_drag(self) -> None:
         """Begin a native window move (frameless drag) — Linux/Qt only.
