@@ -663,6 +663,11 @@ async function addCurrentToQueue() {
     options.extra_params = ModalState.applied;
   }
 
+  // Audio conversion: always sent explicitly (null = keep source as-is) so an
+  // explicit "Sorgente" choice here can't be silently overridden by the
+  // server-side default when the global setting is enabled.
+  options.audio_convert = AudioModalState.applied;
+
   try {
     await API.addToQueue(result.webpage_url, result.title, options);
     toast(I18N.t('queue.added'), 'success');
@@ -1978,6 +1983,9 @@ async function addPlaylistToQueue() {
     }
     // Advanced modal params — same for all videos in the playlist
     if (ModalState.activeCount > 0) opts.extra_params = ModalState.applied;
+    // Audio conversion — same for all videos in the playlist (see comment in
+    // addCurrentToQueue for why this is always sent explicitly)
+    opts.audio_convert = AudioModalState.applied;
     try { await API.addToQueue(entry.webpage_url, entry.title, opts); } catch {}
   }
 
@@ -2118,11 +2126,23 @@ function renderSettings() {
   setChk('s-embed-subs', s.embed_subs);
   setChk('s-auto-start', s.auto_start_downloads !== false);
   setChk('s-notify-complete', s.notify_on_complete !== false);
+  setChk('s-audio-convert-enabled', s.audio_convert_enabled);
+  set('s-audio-convert-format',  s.audio_convert_format || 'mp3');
+  set('s-audio-convert-bitrate', s.audio_convert_bitrate || 192);
+  qs('#s-audio-convert-fields')?.classList.toggle('disabled-fields', !s.audio_convert_enabled);
 
   // Chip selectors
   setChipSel('theme-chip-row',      s.theme,                 'data-theme');
   setChipSel('output-format-chips', s.default_output_format, 'data-val');
   setChipSel('sub-format-chips',    s.subtitle_format,       'data-val');
+
+  // Seed the Audio-conversion modal's effective state from the global default
+  // (a per-item override made via the modal takes precedence until settings
+  // are re-rendered, e.g. after Save or Reset).
+  AudioModalState.applied = s.audio_convert_enabled
+    ? { format: s.audio_convert_format || 'mp3', bitrate: s.audio_convert_bitrate || 192 }
+    : null;
+  _updateAudioConvertBadge();
 
   populateSubLangDatalist();
 }
@@ -2149,6 +2169,9 @@ async function saveSettingsFromForm() {
     max_concurrent:         parseInt(val('s-max-dl')) || 2,
     auto_start_downloads:   chk('s-auto-start'),
     notify_on_complete:     chk('s-notify-complete'),
+    audio_convert_enabled:  chk('s-audio-convert-enabled'),
+    audio_convert_format:   val('s-audio-convert-format'),
+    audio_convert_bitrate:  parseInt(val('s-audio-convert-bitrate')) || 192,
     rate_limit:            val('s-rate-limit'),
     cookies_file:          val('s-cookies'),
     proxy:                 val('s-proxy'),
@@ -2159,6 +2182,13 @@ async function saveSettingsFromForm() {
     State.settings = await API.saveSettings(patch);
     await I18N.setLocale(State.settings.language);
     refreshFfmpegStatus();          // path may have changed — re-check
+    // Re-seed the Audio-conversion modal's effective default from the saved
+    // settings (mirrors the seeding in renderSettings()).
+    AudioModalState.applied = State.settings.audio_convert_enabled
+      ? { format: State.settings.audio_convert_format || 'mp3',
+          bitrate: State.settings.audio_convert_bitrate || 192 }
+      : null;
+    _updateAudioConvertBadge();
     toast(I18N.t('settings.saved'), 'success');
   } catch (err) {
     toast(err.message, 'error');
@@ -2315,6 +2345,91 @@ const ModalState = {
     ).length;
   },
 };
+
+/* ── Audio conversion modal ───────────────────────────────────────────────────
+   AudioModalState.applied is the single effective value used for the NEXT
+   "Add to queue" action (single video or whole playlist) — seeded from the
+   Settings default (renderSettings/saveSettingsFromForm) and overridable via
+   this modal, exactly like ModalState.applied above for yt-dlp params. */
+const AudioModalState = { applied: null };   // null = Source (no conversion) | { format, bitrate }
+
+// Only these audio codecs are broadly safe to mux into an MP4 container when
+// the video is kept; the others (OGG/Opus/FLAC/WAV) need MKV.
+const AUDIO_CONVERT_MP4_SAFE = new Set(['mp3', 'aac']);
+
+function openAudioConvertModal(context) {
+  const applied = AudioModalState.applied;
+  const format  = applied?.format  || State.settings.audio_convert_format  || 'mp3';
+  const bitrate = applied?.bitrate || State.settings.audio_convert_bitrate || 192;
+
+  setChipSel('ac-mode-chips', applied ? 'convert' : 'source');
+  _toggleAudioConvertFields(!!applied);
+  selectAudioConvertFormat(format);
+  const bitrateInput = qs('#ac-bitrate');
+  if (bitrateInput) bitrateInput.value = bitrate;
+
+  _refreshAudioConvertCompat();
+  qs('#audio-convert-modal')?.classList.add('open');
+}
+
+function closeAudioConvertModal() {
+  qs('#audio-convert-modal')?.classList.remove('open');
+}
+
+function setAudioConvertMode(mode) {
+  setChipSel('ac-mode-chips', mode);
+  _toggleAudioConvertFields(mode === 'convert');
+}
+
+function _toggleAudioConvertFields(show) {
+  const el = qs('#ac-convert-fields');
+  if (el) el.style.display = show ? '' : 'none';
+}
+
+function selectAudioConvertFormat(fmt) {
+  setChipSel('ac-format-chips', fmt);
+  const lossless = fmt === 'flac' || fmt === 'wav';
+  const bitrateField = qs('#ac-bitrate-field');
+  if (bitrateField) bitrateField.style.display = lossless ? 'none' : '';
+}
+
+// Video+audio downloads mux the (converted) audio track into the chosen
+// container (mp4/mkv) — MP4 only reliably supports MP3/AAC audio, so grey
+// out the other formats while MP4 is selected (audio-only downloads aren't
+// muxed at all, so this doesn't apply to them, but the container choice
+// isn't known per-item here — erring on the safe side avoids broken files).
+function _refreshAudioConvertCompat() {
+  const mp4  = (State.outputContainer || 'mp4') === 'mp4';
+  const hint = qs('#ac-mp4-hint');
+  if (hint) hint.style.display = mp4 ? '' : 'none';
+  qsa('#ac-format-chips .format-chip').forEach(c =>
+    c.classList.toggle('disabled', mp4 && !AUDIO_CONVERT_MP4_SAFE.has(c.dataset.val)));
+
+  const current = getChipSel('ac-format-chips');
+  if (mp4 && current && !AUDIO_CONVERT_MP4_SAFE.has(current)) {
+    selectAudioConvertFormat('mp3');
+  }
+}
+
+function applyAudioConvertModal() {
+  const converting = getChipSel('ac-mode-chips') === 'convert';
+  AudioModalState.applied = converting
+    ? { format: getChipSel('ac-format-chips') || 'mp3',
+        bitrate: parseInt(qs('#ac-bitrate')?.value) || 192 }
+    : null;
+  _updateAudioConvertBadge();
+  closeAudioConvertModal();
+}
+
+function _updateAudioConvertBadge() {
+  const label = AudioModalState.applied ? AudioModalState.applied.format.toUpperCase() : '';
+  ['audio-convert-badge', 'audio-convert-pl-badge'].forEach(id => {
+    const el = qs(`#${id}`);
+    if (!el) return;
+    el.textContent = label;
+    el.classList.toggle('active', !!label);
+  });
+}
 
 function initYtdlpModal() {
   // Build left navigation
@@ -2606,6 +2721,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Build yt-dlp advanced modal DOM
     initYtdlpModal();
+    // Close the audio-conversion modal on overlay click (same as ytdlp-modal)
+    qs('#audio-convert-modal')?.addEventListener('click', e => {
+      if (e.target.id === 'audio-convert-modal') closeAudioConvertModal();
+    });
     // ── Search-clear button: show X while typing, clear on click ───────────
     document.addEventListener('input', e => {
       if (!e.target.classList.contains('sub-search')) return;
@@ -2665,6 +2784,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     // ── Diagnostics: open the log folder in the system file manager ─────────
     qs('#open-log-folder-btn')?.addEventListener('click', () => {
       try { window.pywebview?.api?.open_log_folder?.(); } catch {}
+    });
+
+    // ── Audio conversion default: grey out fields when disabled ─────────────
+    qs('#s-audio-convert-enabled')?.addEventListener('change', e => {
+      qs('#s-audio-convert-fields')?.classList.toggle('disabled-fields', !e.target.checked);
     });
 
     // ── FFmpeg: pick the binary manually ────────────────────────────────────

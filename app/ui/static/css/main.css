@@ -1779,6 +1779,18 @@ a:hover { text-decoration: underline; }
 }
 .ytdlp-adv-badge.active { display: inline-block; }
 
+/* ── Audio Conversion modal ──────────────────────────────────────────────── */
+.audio-convert-modal { width: 100%; max-width: 420px; }
+.audio-convert-modal-body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 18px 20px;
+  overflow-y: auto;
+}
+.format-chip.disabled { opacity: 0.35; pointer-events: none; }
+.disabled-fields { opacity: 0.35; pointer-events: none; }
+
 /* ── Preset chips ─────────────────────────────────────────────────────────── */
 .preset-chip {
   display: flex; align-items: center; gap: 5px;
@@ -1818,6 +1830,7 @@ a:hover { text-decoration: underline; }
   display: flex;
   justify-content: flex-end;
   align-items: center;
+  gap: 8px;
   padding: 10px 12px 4px;
   border-top: 1px solid var(--border);
   margin-top: 4px;

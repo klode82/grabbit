@@ -4,4 +4,4 @@ Imported by the API (served at GET /api/version and shown in the header) and
 available to any build tooling that wants to stamp the release.
 """
 
-__version__ = "1.0.1"
+__version__ = "1.0.2"

@@ -56,6 +56,11 @@ _DEFAULTS: dict[str, Any] = {
     "default_audio_quality": "best",    # "best"|"320"|"256"|"192"|"128"
     "default_audio_ext": "m4a",         # "m4a"|"mp3"|"opus"|"flac"|"wav"
     "default_audio_lang": "",           # ISO 639-1, empty = any
+    # Audio conversion (re-encode the audio track; independent of default_audio_ext,
+    # which only prefers a *native* format when the source already offers it)
+    "audio_convert_enabled":  False,          # False = keep source audio as-is
+    "audio_convert_format":   "mp3",          # "mp3"|"aac"|"ogg"|"opus"|"flac"|"wav"
+    "audio_convert_bitrate":  192,             # kbps, ignored for flac/wav (lossless)
     # Subtitles
     "default_sub_lang": "",             # ISO 639-1, empty = none
     "default_sub_auto": False,          # include auto-generated captions

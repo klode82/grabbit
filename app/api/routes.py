@@ -153,6 +153,17 @@ async def add_to_queue(req: QueueAddRequest) -> Any:
     # Use default output format from settings if not explicitly set
     if "merge_output_format" not in opts:
         opts["merge_output_format"] = settings.get("default_output_format", "mp4")
+    # Audio conversion default (frontend normally always sends this key,
+    # explicitly null when disabled — this is only a safety net)
+    if "audio_convert" not in opts:
+        opts["audio_convert"] = (
+            {
+                "format":  settings.get("audio_convert_format", "mp3"),
+                "bitrate": settings.get("audio_convert_bitrate", 192),
+            }
+            if settings.get("audio_convert_enabled", False)
+            else None
+        )
 
     item = queue.add(req.url, req.title, opts)
     return item.to_dict()

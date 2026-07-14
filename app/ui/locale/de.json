@@ -147,7 +147,12 @@
     "ffmpeg_path_ph": "Leer = automatische Erkennung",
     "ffmpeg_hint": "Leer lassen für automatische Erkennung im System",
     "ffmpeg_detected": "Erkannt: {path}",
-    "ffmpeg_missing": "Nicht gefunden"
+    "ffmpeg_missing": "Nicht gefunden",
+    "group_audio_convert": "Audiokonvertierung",
+    "audio_convert_enabled": "Audiospur konvertieren",
+    "audio_convert_enabled_hint": "Audiospur in ein festes Format neu kodieren, anstatt die Quelle unverändert zu lassen",
+    "audio_convert_format": "Konvertieren in",
+    "audio_convert_bitrate": "Bitrate (kbps)"
   },
   "common": {
     "cancel": "Abbrechen",
@@ -193,5 +198,15 @@
   "ffmpeg": {
     "banner": "FFmpeg nicht gefunden: installiere es oder lege den Pfad in den Einstellungen fest.",
     "banner_action": "Einstellungen öffnen"
+  },
+  "audioconvert": {
+    "button": "Audio",
+    "title": "Audiokonvertierung",
+    "subtitle": "Überschreibt die globalen Einstellungen für diesen Download",
+    "source": "Quelle",
+    "convert_to": "Konvertieren in…",
+    "mp4_hint": "Mit dem MP4-Container sind nur MP3 und AAC kompatibel — wähle MKV für die anderen Formate.",
+    "bitrate": "Bitrate (kbps)",
+    "apply": "Übernehmen"
   }
 }

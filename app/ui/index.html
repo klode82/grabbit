@@ -206,8 +206,15 @@
             </div>
           </div>
 
-          <!-- Parametri avanzati yt-dlp — separator + button -->
+          <!-- Parametri avanzati yt-dlp / conversione audio — separator + buttons -->
           <div class="pl-format-advanced">
+            <button class="btn btn-ghost ytdlp-adv-btn" id="audio-convert-pl-btn"
+                    onclick="openAudioConvertModal('playlist')"
+                    title="Conversione audio — applicata a tutti i video selezionati">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+              <span data-i18n="audioconvert.button">Audio</span>
+              <span class="ytdlp-adv-badge" id="audio-convert-pl-badge"></span>
+            </button>
             <button class="btn btn-ghost ytdlp-adv-btn" id="ytdlp-pl-adv-btn"
                     onclick="openYtdlpModal()"
                     title="Parametri avanzati yt-dlp — applicati a tutti i video selezionati">
@@ -344,6 +351,11 @@
         <!-- Footer actions -->
         <div class="result-footer">
           <button class="btn btn-ghost" onclick="resetResult()" data-i18n="common.cancel">Cancel</button>
+          <button class="btn btn-ghost ytdlp-adv-btn" id="audio-convert-btn" onclick="openAudioConvertModal('single')" title="Conversione audio">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+            <span data-i18n="audioconvert.button">Audio</span>
+            <span class="ytdlp-adv-badge" id="audio-convert-badge"></span>
+          </button>
           <button class="btn btn-ghost ytdlp-adv-btn" id="ytdlp-adv-btn" onclick="openYtdlpModal()" title="Parametri avanzati yt-dlp">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93l-1.41 1.41M4.93 4.93l1.41 1.41M12 2v2M12 20v2M2 12h2M20 12h2M19.07 19.07l-1.41-1.41M4.93 19.07l1.41-1.41"/></svg>
             Avanzato
@@ -589,6 +601,38 @@
           </div>
         </div>
 
+        <!-- AUDIO CONVERSION -->
+        <div class="settings-section">
+          <div class="settings-section-title" data-i18n="settings.group_audio_convert">Audio conversion</div>
+          <div class="settings-field settings-toggle-row">
+            <div>
+              <div class="settings-label" data-i18n="settings.audio_convert_enabled">Convert audio track</div>
+              <div class="settings-hint" data-i18n="settings.audio_convert_enabled_hint">Re-encode the audio track to a fixed format instead of keeping the source as-is</div>
+            </div>
+            <label class="toggle">
+              <input type="checkbox" id="s-audio-convert-enabled">
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+          <div class="settings-row-grid settings-grid-2" id="s-audio-convert-fields">
+            <div class="settings-field">
+              <label class="settings-label" for="s-audio-convert-format" data-i18n="settings.audio_convert_format">Convert to</label>
+              <select class="select" id="s-audio-convert-format">
+                <option value="mp3">MP3</option>
+                <option value="aac">AAC (M4A)</option>
+                <option value="ogg">OGG (Vorbis)</option>
+                <option value="opus">Opus</option>
+                <option value="flac">FLAC</option>
+                <option value="wav">WAV</option>
+              </select>
+            </div>
+            <div class="settings-field">
+              <label class="settings-label" for="s-audio-convert-bitrate" data-i18n="settings.audio_convert_bitrate">Bitrate (kbps)</label>
+              <input class="input" type="number" id="s-audio-convert-bitrate" min="32" max="320" step="1">
+            </div>
+          </div>
+        </div>
+
         <!-- SUBTITLES -->
         <div class="settings-section">
           <div class="settings-section-title" data-i18n="settings.group_subs">Subtitles</div>
@@ -766,6 +810,55 @@
           </div>
           <button class="btn btn-ghost btn-sm" onclick="closeYtdlpModal()">Annulla</button>
           <button class="btn btn-primary btn-sm" onclick="applyYtdlpModal()">Applica</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── Audio Conversion Modal ─────────────────────────────────────────── -->
+  <div class="modal-overlay" id="audio-convert-modal">
+    <div class="modal-card audio-convert-modal">
+
+      <div class="modal-header">
+        <div class="modal-header-info">
+          <h3 class="modal-title" data-i18n="audioconvert.title">Conversione audio</h3>
+          <p class="modal-subtitle" data-i18n="audioconvert.subtitle">Sovrascrive le impostazioni globali per questo download</p>
+        </div>
+        <button class="modal-close-btn" onclick="closeAudioConvertModal()">
+          <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="1" y1="1" x2="12" y2="12"/><line x1="12" y1="1" x2="1" y2="12"/></svg>
+        </button>
+      </div>
+
+      <div class="audio-convert-modal-body">
+        <div class="format-grid" id="ac-mode-chips">
+          <button class="format-chip" data-val="source" onclick="setAudioConvertMode('source')" data-i18n="audioconvert.source">Sorgente</button>
+          <button class="format-chip" data-val="convert" onclick="setAudioConvertMode('convert')" data-i18n="audioconvert.convert_to">Converti in…</button>
+        </div>
+
+        <div id="ac-convert-fields">
+          <div class="format-grid" id="ac-format-chips">
+            <button class="format-chip" data-val="mp3"  onclick="selectAudioConvertFormat('mp3')">MP3</button>
+            <button class="format-chip" data-val="aac"  onclick="selectAudioConvertFormat('aac')">AAC</button>
+            <button class="format-chip" data-val="ogg"  onclick="selectAudioConvertFormat('ogg')">OGG</button>
+            <button class="format-chip" data-val="opus" onclick="selectAudioConvertFormat('opus')">Opus</button>
+            <button class="format-chip" data-val="flac" onclick="selectAudioConvertFormat('flac')">FLAC</button>
+            <button class="format-chip" data-val="wav"  onclick="selectAudioConvertFormat('wav')">WAV</button>
+          </div>
+          <p class="settings-hint" id="ac-mp4-hint" style="display:none" data-i18n="audioconvert.mp4_hint">
+            Con contenitore MP4 sono compatibili solo MP3 e AAC — scegli MKV per gli altri formati.
+          </p>
+          <div class="settings-field" id="ac-bitrate-field" style="margin-top:10px">
+            <label class="settings-label" for="ac-bitrate" data-i18n="audioconvert.bitrate">Bitrate (kbps)</label>
+            <input class="input" type="number" id="ac-bitrate" min="32" max="320" step="1">
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <div class="modal-footer-actions" style="margin-left:auto">
+          <button class="btn btn-ghost btn-sm" onclick="closeAudioConvertModal()" data-i18n="common.cancel">Annulla</button>
+          <button class="btn btn-primary btn-sm" onclick="applyAudioConvertModal()" data-i18n="audioconvert.apply">Applica</button>
         </div>
       </div>
 

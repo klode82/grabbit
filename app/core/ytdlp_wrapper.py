@@ -19,6 +19,33 @@ def _strip_ansi(s: str) -> str:
     return _ANSI_RE.sub('', s or '')
 
 
+# ── Audio conversion ─────────────────────────────────────────────────────────
+# User-facing format → ffmpeg encoder name, used when the video is kept (the
+# audio track is recoded in place during the merge step, container unchanged).
+_AUDIO_CONVERT_CODECS = {
+    "mp3":  "libmp3lame",
+    "aac":  "aac",
+    "ogg":  "libvorbis",
+    "opus": "libopus",
+    "flac": "flac",
+    "wav":  "pcm_s16le",
+}
+# User-facing format → yt-dlp FFmpegExtractAudio preferredcodec, used for
+# audio-only downloads (no video to preserve).
+_EXTRACT_PREFERRED_CODEC = {
+    "mp3": "mp3", "aac": "aac", "ogg": "vorbis",
+    "opus": "opus", "flac": "flac", "wav": "wav",
+}
+# User-facing format → resulting file extension (mirrors yt-dlp's own mapping,
+# e.g. "aac" produces an .m4a container).
+_AUDIO_CONVERT_EXT = {
+    "mp3": "mp3", "aac": "m4a", "ogg": "ogg",
+    "opus": "opus", "flac": "flac", "wav": "wav",
+}
+# Bitrate is meaningless for lossless targets (flac/wav) — omit -b:a for those.
+_LOSSY_AUDIO_FORMATS = {"mp3", "aac", "ogg", "opus"}
+
+
 def _apply_extra_params(ydl_opts: dict, extra: dict) -> None:
     """Map the advanced-modal extra_params dict onto yt-dlp ydl_opts."""
     if not extra:
@@ -445,6 +472,14 @@ class YTDLPWrapper:
         output_dir = options.get("output_dir", ".")
         merge_ext  = options.get("merge_output_format", "mp4")
 
+        # Audio conversion (optional): for an audio-only download the final
+        # container follows the chosen conversion format rather than
+        # merge_output_format, so the collision-check peek below and
+        # _find_output_file() at the end look for the right extension.
+        audio_convert = options.get("audio_convert") or None
+        if audio_convert and not fmt_video and audio_convert.get("format") in _AUDIO_CONVERT_EXT:
+            merge_ext = _AUDIO_CONVERT_EXT[audio_convert["format"]]
+
         Path(output_dir).expanduser().mkdir(parents=True, exist_ok=True)
 
         base_tpl = options.get("output_template") or f"{output_dir}/%(title)s.%(ext)s"
@@ -519,6 +554,29 @@ class YTDLPWrapper:
         # just extracts the audio container as-is.
         if fmt_audio and not fmt_video:
             ydl_opts.pop("merge_output_format", None)
+
+        if audio_convert and audio_convert.get("format") in _AUDIO_CONVERT_CODECS:
+            conv_format  = audio_convert["format"]
+            conv_bitrate = audio_convert.get("bitrate")
+            lossy        = conv_format in _LOSSY_AUDIO_FORMATS
+
+            if fmt_video:
+                # Keep the video stream untouched (-c:v copy) and only recode
+                # the audio track during the merge step, so the output stays
+                # inside the chosen container (mp4/mkv) instead of becoming
+                # an audio-only file.
+                args = ["-c:v", "copy", "-c:a", _AUDIO_CONVERT_CODECS[conv_format]]
+                if lossy and conv_bitrate:
+                    args += ["-b:a", f"{conv_bitrate}k"]
+                ydl_opts.setdefault("postprocessor_args", {})["Merger"] = args
+            else:
+                pp = {
+                    "key":            "FFmpegExtractAudio",
+                    "preferredcodec": _EXTRACT_PREFERRED_CODEC[conv_format],
+                }
+                if lossy and conv_bitrate:
+                    pp["preferredquality"] = str(conv_bitrate)
+                ydl_opts.setdefault("postprocessors", []).append(pp)
 
         if options.get("continuedl"):
             ydl_opts["continuedl"] = True

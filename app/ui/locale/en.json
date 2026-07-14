@@ -147,7 +147,12 @@
     "ffmpeg_path_ph": "Empty = auto-detect",
     "ffmpeg_hint": "Leave empty to detect it automatically on your system",
     "ffmpeg_detected": "Detected: {path}",
-    "ffmpeg_missing": "Not found"
+    "ffmpeg_missing": "Not found",
+    "group_audio_convert": "Audio conversion",
+    "audio_convert_enabled": "Convert audio track",
+    "audio_convert_enabled_hint": "Re-encode the audio track to a fixed format instead of keeping the source as-is",
+    "audio_convert_format": "Convert to",
+    "audio_convert_bitrate": "Bitrate (kbps)"
   },
   "common": {
     "cancel": "Cancel",
@@ -193,5 +198,15 @@
   "ffmpeg": {
     "banner": "FFmpeg not found: install it or set its path in Settings.",
     "banner_action": "Open Settings"
+  },
+  "audioconvert": {
+    "button": "Audio",
+    "title": "Audio conversion",
+    "subtitle": "Overrides the global settings for this download",
+    "source": "Source",
+    "convert_to": "Convert to…",
+    "mp4_hint": "Only MP3 and AAC are compatible with the MP4 container — choose MKV for the other formats.",
+    "bitrate": "Bitrate (kbps)",
+    "apply": "Apply"
   }
 }

@@ -147,7 +147,12 @@
     "ffmpeg_path_ph": "Vazio = detecção automática",
     "ffmpeg_hint": "Deixe vazio para detectá-lo automaticamente no sistema",
     "ffmpeg_detected": "Detectado: {path}",
-    "ffmpeg_missing": "Não encontrado"
+    "ffmpeg_missing": "Não encontrado",
+    "group_audio_convert": "Conversão de áudio",
+    "audio_convert_enabled": "Converter faixa de áudio",
+    "audio_convert_enabled_hint": "Recodifica a faixa de áudio para um formato fixo em vez de manter a fonte original",
+    "audio_convert_format": "Converter para",
+    "audio_convert_bitrate": "Taxa de bits (kbps)"
   },
   "common": {
     "cancel": "Cancelar",
@@ -193,5 +198,15 @@
   "ffmpeg": {
     "banner": "FFmpeg não encontrado: instale-o ou defina o caminho nas Configurações.",
     "banner_action": "Abrir Configurações"
+  },
+  "audioconvert": {
+    "button": "Áudio",
+    "title": "Conversão de áudio",
+    "subtitle": "Substitui as configurações globais para este download",
+    "source": "Original",
+    "convert_to": "Converter para…",
+    "mp4_hint": "Apenas MP3 e AAC são compatíveis com o contêiner MP4 — escolha MKV para os outros formatos.",
+    "bitrate": "Taxa de bits (kbps)",
+    "apply": "Aplicar"
   }
 }
