@@ -343,6 +343,13 @@ function resetResult() {
   qs('#playlist-analysis').classList.remove('visible');
   const vh = qs('#video-size-hint'); if (vh) vh.textContent = '';
   const ah = qs('#audio-size-hint'); if (ah) ah.textContent = '';
+  // Unconditional badge reset: video/audio/subs badges are only rewritten by
+  // selectVideoFormat/selectAudioFormat/selectSub, which don't run at all
+  // when a link has no video, no audio, or no matching subtitle — leaving a
+  // PREVIOUS link's badge on screen otherwise. Clear all three explicitly so
+  // there's never a stale badge, regardless of what the next link turns out
+  // to have.
+  ['video', 'audio', 'subs'].forEach(type => updateFormatSectionBadge(type, null));
 }
 
 /* ── Skeleton loader ────────────────────────────────────────────────────────── */
@@ -406,6 +413,17 @@ function handleVideoResult(result) {
 function applyDefaults(result) {
   const s = State.settings;
 
+  // Reset everything first, unconditionally — a link may have no video, no
+  // audio, or no matching subtitle, so the selection logic below may not run
+  // for one or more sections. Clearing state + badges here first guarantees
+  // this always starts from a clean slate before any selection is (maybe)
+  // made, instead of relying on each selector to overwrite the previous
+  // link's leftovers.
+  State.selectedVideo = null;
+  State.selectedAudio = null;
+  State.selectedSub   = null;
+  ['video', 'audio', 'subs'].forEach(type => updateFormatSectionBadge(type, null));
+
   // Video toggle: ON only if there are video formats
   const hasVideo = (result.video_formats || []).length > 0;
   State.videoEnabled = hasVideo;
@@ -420,9 +438,14 @@ function applyDefaults(result) {
   qs('#audio-toggle').checked = hasAudio;
   qs('#section-audio').classList.toggle('disabled', !hasAudio);
 
-  // Subtitles toggle: default OFF unless settings has a sub lang AND subs exist
-  const hasSubs = result.has_subtitles;
-  const wantSubs = !!(s.default_sub_lang && hasSubs);
+  // Subtitles toggle: default OFF unless the preferred language actually
+  // exists for THIS video — checking only "does it have some subtitles"
+  // (regardless of language) left the toggle ON with no subtitle actually
+  // selected/downloaded whenever a new video didn't have the default
+  // language, which looked like a leftover from the previous video.
+  const manualMatch = !!(s.default_sub_lang && result.subtitles?.manual?.[s.default_sub_lang]);
+  const autoMatch   = !!(s.default_sub_lang && s.default_sub_auto && result.subtitles?.automatic?.[s.default_sub_lang]);
+  const wantSubs = manualMatch || autoMatch;
   State.subsEnabled = wantSubs;
   qs('#subs-toggle').checked = wantSubs;
   qs('#section-subs').classList.toggle('disabled', !wantSubs);
@@ -451,13 +474,17 @@ function applyDefaults(result) {
     selectAudioFormat((langMatch || result.audio_formats[0]).format_id);
   }
 
-  // Pre-select subtitle
-  if (s.default_sub_lang) {
-    const manual = result.subtitles?.manual?.[s.default_sub_lang];
-    const auto   = result.subtitles?.automatic?.[s.default_sub_lang];
-    if (manual) selectSub(s.default_sub_lang, false);
-    else if (auto && s.default_sub_auto) selectSub(s.default_sub_lang, true);
-  }
+  // Pre-select subtitle (reuses the matches computed above). Always call
+  // selectSub() — including the "no match" case — so the header badge and
+  // chip list are re-synced for the new video. selectVideoFormat/
+  // selectAudioFormat above always run unconditionally and so always
+  // refresh their own badges, but this subtitle branch used to skip the
+  // call entirely when nothing matched, leaving the PREVIOUS video's
+  // subtitle badge (e.g. "Italian (auto)") visible even though the toggle
+  // was correctly OFF and nothing was actually selected/downloaded.
+  if (manualMatch)      selectSub(s.default_sub_lang, false);
+  else if (autoMatch)   selectSub(s.default_sub_lang, true);
+  else                  selectSub(null, false);
 }
 
 /* ── Format chips ──────────────────────────────────────────────────────────── */
@@ -868,7 +895,10 @@ async function clearCompleted() {
   try {
     const resp = await API.clearCompleted();
     // Update counters immediately from the response — don't wait for WS
-    if (resp?.stats) renderStats(resp.stats);
+    if (resp?.stats) {
+      renderStats(resp.stats);
+      updateQueueBadge(resp.stats.total);
+    }
   } catch {}
 }
 

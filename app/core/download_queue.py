@@ -181,7 +181,7 @@ class DownloadQueue:
             item._stop_event.set()
             del self._items[item_id]
             self._order = [i for i in self._order if i != item_id]
-        self._emit_stats()
+        self._emit_queue_update()
         self._save_queue()
         return True
 
@@ -399,15 +399,6 @@ class DownloadQueue:
             if item.id not in self._items:
                 return   # item removed — don't send a ghost update to the UI
         payload = {"event": event, "item": item.to_dict(), "stats": self.stats}
-        for cb in self._listeners:
-            try:
-                cb(payload)
-            except Exception:
-                pass
-
-    def _emit_stats(self) -> None:
-        """Broadcast current stats only (no item data)."""
-        payload = {"event": "stats", "stats": self.stats}
         for cb in self._listeners:
             try:
                 cb(payload)
