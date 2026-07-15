@@ -951,11 +951,16 @@ function computePlaylistFormats(entries) {
     const eid = entry._stub?.id || entry.id;
 
     for (const f of (entry.video_formats || [])) {
-      const key = `${f.height || 0}_${f.codec || ''}`;
+      // Language is part of the identity: some sources (e.g. m3u8/HLS from
+      // dubbed content) expose multiple tracks with identical height/codec
+      // that differ only by language — without it in the key, those tracks
+      // collapse into a single ambiguous global option (see audio below).
+      const lang = f.language || '';
+      const key  = `${f.height || 0}_${f.codec || ''}_${lang}`;
       if (!videoMap[key]) {
         videoMap[key] = {
-          key, label: `${f.quality_label} · ${f.codec || ''}`,
-          height: f.height || 0, codec: f.codec || '', ext: f.ext,
+          key, label: `${f.quality_label} · ${f.codec || ''}` + (lang ? ` · [${lang}]` : ''),
+          height: f.height || 0, codec: f.codec || '', ext: f.ext, language: lang,
           count: 0, total, byEntry: {},
         };
       }
@@ -966,12 +971,18 @@ function computePlaylistFormats(entries) {
     }
 
     for (const f of (entry.audio_formats || [])) {
+      // Same reasoning as video above: two audio tracks with the same
+      // quality_label/codec but different languages (e.g. original vs. an
+      // Italian dub) must NOT be merged into one global option, otherwise
+      // picking it silently binds to whichever track happened to be listed
+      // first per entry — ambiguous and inconsistent across the playlist.
       const bitLabel = f.quality_label || `${Math.round(f.abr || 0)}k`;
-      const key = `${bitLabel}_${f.codec || ''}`;
+      const lang = f.language || '';
+      const key  = `${bitLabel}_${f.codec || ''}_${lang}`;
       if (!audioMap[key]) {
         audioMap[key] = {
-          key, label: `${bitLabel} · ${f.codec || ''}`,
-          bitrate: f.abr || 0, codec: f.codec || '', ext: f.ext,
+          key, label: `${bitLabel} · ${f.codec || ''}` + (lang ? ` · [${lang}]` : ''),
+          bitrate: f.abr || 0, codec: f.codec || '', ext: f.ext, language: lang,
           count: 0, total, byEntry: {},
         };
       }

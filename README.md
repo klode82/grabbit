@@ -9,9 +9,9 @@
 </p>
 
 <p align="center">
-  <img alt="Release" src="https://img.shields.io/badge/release-v1.0.2-7C3AED">
+  <img alt="Release" src="https://img.shields.io/badge/release-v1.0.3-7C3AED">
   <img alt="License" src="https://img.shields.io/badge/license-MIT-blue">
-  <img alt="Platform" src="https://img.shields.io/badge/platform-Linux-555?logo=linux&logoColor=white">
+  <img alt="Platform" src="https://img.shields.io/badge/platform-Linux%20%7C%20Windows-555?logo=linux&logoColor=white">
   <img alt="Python" src="https://img.shields.io/badge/Python-3.12%2B-3776AB?logo=python&logoColor=white">
   <img alt="PySide6" src="https://img.shields.io/badge/PySide6-Qt%206-41CD52?logo=qt&logoColor=white">
   <img alt="FastAPI" src="https://img.shields.io/badge/FastAPI-0.115%2B-009688?logo=fastapi&logoColor=white">
@@ -30,6 +30,7 @@
 - **Single videos & playlists** — automatic link analysis with per-entry format selection.
 - **Format control** — choose video quality and codec, audio quality and format, and subtitles, each independently.
 - **Output container** — merge to **MP4** or **MKV**, as a global default or per download.
+- **Audio conversion** — re-encode the downloaded audio track to MP3, AAC, OGG (Vorbis), Opus, FLAC, or WAV instead of keeping the source as-is, with a free bitrate setting. Works alongside a kept video (audio-only re-encode, video copied untouched) or on audio-only downloads (output container follows the chosen format). Global default in Settings, with a per-download override.
 - **Subtitles** — download in SRT / ASS / VTT, optionally embedded in the file, including auto-generated captions.
 - **Download queue** — concurrent downloads, pause/resume per item or for the whole queue, retry on error, and a clean-up for completed items. The queue is **persisted**, so it survives a restart.
 - **Auto-start (optional)** — start downloads on add, or hold them in the queue until you press *Resume All*.
@@ -52,7 +53,9 @@
 
 ---
 
-## Installation (Linux, AppImage)
+## Installation
+
+### Linux (AppImage)
 
 Download the latest `GRABBIT-x86_64.AppImage` from the [Releases page](https://github.com/klode82/grabbit/releases), then:
 
@@ -61,7 +64,13 @@ chmod +x GRABBIT-x86_64.AppImage
 ./GRABBIT-x86_64.AppImage
 ```
 
-That's it — the AppImage is self-contained and needs no installation. (Windows and macOS builds are planned.)
+That's it — the AppImage is self-contained and needs no installation.
+
+### Windows
+
+Download the latest `GRABBIT-<version>-windows-x64.zip` from the [Releases page](https://github.com/klode82/grabbit/releases), extract it anywhere, and run `GRABBIT.exe`. Portable, no installer — nothing else to set up. FFmpeg is auto-detected the same way as on Linux; point to it manually in **Settings → FFmpeg** if it isn't found.
+
+(A macOS build is planned.)
 
 ---
 
@@ -98,13 +107,13 @@ pip install -r requirements.txt
 python main.py
 ```
 
-To produce the packaged AppImage you also need [`appimagetool`](https://github.com/AppImage/appimagetool/releases) on your `PATH`:
+On Linux, to also produce the packaged AppImage you need [`appimagetool`](https://github.com/AppImage/appimagetool/releases) on your `PATH`:
 
 ```bash
 python build.py --appimage
 ```
 
-`build.py` runs PyInstaller, prunes unused Qt modules to slim the bundle, and wraps the result into an AppImage. Useful flags: `--no-build`, `--no-prune`, `--appimage`.
+`build.py` detects the OS automatically: on Linux it runs PyInstaller against `GRABBIT.spec`, prunes unused Qt modules to slim the bundle, and (with `--appimage`) wraps the result into an AppImage. On Windows it runs PyInstaller against `GRABBIT-win.spec` and zips the result into a versioned `GRABBIT-<version>-windows-x64.zip`. Useful flags: `--no-build`, `--no-prune` (Linux), `--appimage` (Linux), `--no-zip` (Windows).
 
 ---
 

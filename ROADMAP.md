@@ -164,6 +164,7 @@ grabbit/
 - [x] Selettore container **MP4 / MKV**
 - [x] Link extractor cliccabile con `↗` (apertura browser nativo)
 - [x] Badge qualità e audio nella result-header
+- [x] **Bug fix (v1.0.3)** — analizzare un nuovo video non azzerava del tutto lo stato precedente: se il video successivo non offriva la lingua di sottotitoli di default, il badge restava con l'etichetta del video *precedente* (es. "Italian (auto)") anche col toggle correttamente OFF, dando l'illusione di un sottotitolo attivo che in realtà non veniva scaricato. `applyDefaults()` ora azzera esplicitamente selezioni e badge (video/audio/sottotitoli) *prima* di applicare le selezioni del nuovo video, così un link senza video o senza audio non lascia mai un badge del link precedente appeso
 
 ---
 
@@ -177,6 +178,7 @@ grabbit/
 - [x] Retry automatico su errore (backoff configurabile)
 - [x] Messaggio errore completo sull'item
 - [x] Counter naming con `prepare_filename()` per file duplicati
+- [x] **Bug fix (v1.0.3)** — rimuovere un singolo item dal cestino mandava un evento WebSocket (`"stats"`) che il frontend non ascoltava affatto: badge "Queue" e contatori Total/Completed restavano bloccati ai valori precedenti, e se era l'ultimo item la lista restava vuota senza il messaggio "Nessun download". La rimozione singola ora usa lo stesso evento di resync completo già usato da "Pulisci completati"/"Svuota tutto"
 
 ---
 
@@ -196,6 +198,8 @@ grabbit/
 - [x] Toggle per-entry V/A/S — disattivare un canale risolve l'arancione per quell'entry
 - [x] **"Add to queue" bloccato** finché almeno un video selezionato ha canali attivi senza selezione
 - [x] Selezione per-entry sovrascrive la globale
+- [x] **Bug fix (v1.0.3)** — analizzare una seconda playlist nella stessa sessione bloccava gli accordion Video/Audio/Sottotitoli della bar globale: `initPlaylistFormatBar()` viene richiamata ad ogni nuova playlist e usava `addEventListener` su header statici, accumulando un listener duplicato ad ogni caricamento (il click apriva e richiudeva l'accordion nello stesso tick). Passato a `.onclick =` (sostituisce invece di accumulare)
+- [x] **Bug fix (v1.0.3)** — il selettore globale audio/video raggruppava i formati solo per `quality_label + codec`, ignorando la lingua: due tracce audio dello stesso video con stesso codec ma lingua diversa (es. originale `[vor]` e doppiaggio italiano `[ita]`) collassavano nella stessa voce globale, e la seconda veniva scartata silenziosamente per ogni entry — selezionarla applicava una lingua ambigua/incoerente tra i video della playlist. La chiave ora include anche la lingua, così `[vor]` e `[ita]` diventano due opzioni globali distinte e selezionabili
 
 ---
 
@@ -279,22 +283,25 @@ grabbit/
 ### 🚧 Phase 10 — Packaging & Release
 > Prima distribuzione pubblica.
 
-**Build & packaging — ✅ Linux (onedir → AppImage)**
+**Build & packaging — ✅ Linux (onedir → AppImage), ✅ Windows (onedir → zip)**
 - [x] Resolver risorse *frozen-aware* (`app/core/paths.py`): usa `sys._MEIPASS` quando impacchettato, root del progetto in sviluppo
 - [x] Build **PyInstaller** onedir (`GRABBIT.spec`) — funzionante e testata su Linux
-  - [ ] Windows: `.exe` standalone *(richiede macchina/CI Windows)*
+- [x] Build **PyInstaller** onedir Windows (`GRABBIT-win.spec`) — backend EdgeChromium via pythonnet (niente PySide6/Qt), `ffmpeg_location`/`certifi` inclusi; **testata e funzionante** su macchina Windows reale
   - [ ] macOS: `.app` bundle *(richiede macchina/CI macOS)*
-- [x] Script di build (`build.py`): build → prune Qt → AppImage, con flag `--no-build` / `--no-prune` / `--appimage`
-- [x] **Snellimento bundle**: rimosso `collect_submodules('qtpy')`, filtrati i locale WebEngine alle 6 lingue, pruning curato di librerie + moduli QML inutili → da **628 MB a ~454 MB** estratti
+- [x] Script di build (`build.py`): cross-platform via `sys.platform` — Linux: build → prune Qt → AppImage (`--no-build` / `--no-prune` / `--appimage`); Windows: build → zip versionato `GRABBIT-<ver>-windows-x64.zip` (`--no-zip`)
+- [x] **Snellimento bundle**: rimosso `collect_submodules('qtpy')`, filtrati i locale WebEngine alle 6 lingue, pruning curato di librerie + moduli QML inutili → da **628 MB a ~454 MB** estratti (Linux)
 - [x] **AppImage** Linux via `appimagetool` (squashfs xz) — wrapping dell'onedir snellito
-- [x] **Trascinamento finestra frameless** via `startSystemMove()` nativo (mousedown sull'header, pulsanti esclusi)
-- [ ] Investigare `frameless=True` su Windows (su Linux causa segfault con Qt)
+- [x] **Trascinamento finestra frameless** via `startSystemMove()` nativo su Linux (mousedown sull'header, pulsanti esclusi); nativo pywebview (`pywebview-drag-region`) su Windows
+- [x] **Icona app Windows** — `icon='assets/icon.ico'` nello spec PyInstaller (prima commentata: l'eseguibile mostrava l'icona generica di Python)
+- [x] **Fix maximize su Windows** — `WindowState.Maximized` nativo di WinForms su finestra frameless copriva la taskbar (nessun chrome per calcolare l'area di lavoro); sostituito con un "soft maximize" che legge l'area di lavoro del monitor corrente (`MonitorFromWindow`/`GetMonitorInfoW`) e ridimensiona la finestra a quella, con restore allo stato precedente
 - [ ] **Icona tray** con menu contestuale (Mostra/Nascondi, Esci; minimizza in background) — *rimandata dalla Phase 9*: Qt `QSystemTrayIcon` su Linux, nativo (NSStatusItem / win32) o `pystray` su macOS/Windows
 
 **Release**
-- [ ] README utente finale
+- [x] README utente finale
 - [ ] CHANGELOG
-- [ ] Prima release `v1.0.0`
+- [x] Prima release `v1.0.0`
+- [x] `v1.0.1` — primo build Windows funzionante (frameless, drag, minimize/maximize/close)
+- [x] `v1.0.3` — conversione audio (MP3/AAC/OGG/Opus/FLAC/WAV, bitrate libero); fix icona/maximize/accordion Windows; fix reset badge formato su nuovo video/link; fix desync badge coda dopo rimozione item; fix ambiguità selettore globale playlist con tracce multi-lingua
 
 ---
 
@@ -322,16 +329,18 @@ grabbit/
 
 ---
 
-### 🔲 Phase 12 — Controlli Avanzati FFmpeg (Video, Audio, Sottotitoli)
+### 🚧 Phase 12 — Controlli Avanzati FFmpeg (Video, Audio, Sottotitoli)
 > Conversione e post-processing FFmpeg accessibile dalla UI.
 
-- [ ] **Singolo video** — sezione dedicata nella result card:
-  - Estrazione audio pura: MP3 / AAC / M4A / FLAC / OPUS con scelta bitrate
-  - Conversione container: MP4 → MKV e viceversa post-download
-  - Sottotitoli: burn-in (hardcode) vs embed vs file separato
-- [ ] **Playlist** — controlli equivalenti nel bar globale (applicati a tutti i video)
-- [ ] Usa `FFmpegExtractAudioPP`, `FFmpegVideoConvertor`, `FFmpegEmbedSubtitlePP` di yt-dlp
-- [ ] Verifica FFmpeg disponibile prima di mostrare le opzioni
+- [x] **Conversione audio** (v1.0.3) — pulsante dedicato "Audio" (singolo video + playlist, accanto ad "Avanzato") con modal Sorgente/Converti in: MP3 / AAC / OGG (Vorbis) / Opus / FLAC / WAV, bitrate libero (kbps, ignorato per i lossless)
+  - [x] Video mantenuto: audio ricodificato in-place restando nel container scelto (`postprocessor_args` sul Merger, `-c:v copy -c:a <codec>`)
+  - [x] Solo audio (o link audio-only): estrazione via `FFmpegExtractAudioPP`, container che segue il formato scelto
+  - [x] Default globale in Settings + override per download (singolo o intera playlist)
+  - [x] Guardia di compatibilità: con container MP4 offerti solo MP3/AAC (gli altri richiedono MKV)
+- [ ] **Singolo video** — ancora da fare nella result card:
+  - [ ] Conversione container: MP4 → MKV e viceversa **post-download** (oggi la scelta container vale solo per il merge iniziale)
+  - [ ] Sottotitoli: burn-in (hardcode) vs embed vs file separato — oggi solo embed/file separato
+- [ ] Verifica FFmpeg disponibile prima di mostrare le opzioni di conversione audio
 
 ---
 
