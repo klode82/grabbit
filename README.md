@@ -19,6 +19,12 @@
 </p>
 
 <p align="center">
+  <a href="https://www.buymeacoffee.com/aurigalab" target="_blank" title="buymeacoffee">
+    <img src="https://iili.io/JoQ1MeS.md.png"  alt="buymeacoffee-yellow-badge" style="width: 104px;">
+  </a>
+</p>
+
+<p align="center">
   <img src="docs/screenshot.png" alt="GRABBIT — download queue" width="820">
 </p>
 
