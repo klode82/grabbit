@@ -57,3 +57,6 @@ Desktop.ini
 # Logs
 *.log
 logs/
+
+#Private
+.private/

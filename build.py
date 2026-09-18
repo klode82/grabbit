@@ -217,7 +217,7 @@ def build_appimage() -> None:
     else:
         print(f"   (warning: {ICON} missing — AppImage will have no icon)")
 
-    out = ROOT / "dist" / "GRABBIT-x86_64.AppImage"
+    out = ROOT / "dist" / f"GRABBIT-{app_version()}-x86_64.AppImage"
     print(">> Running appimagetool…")
     # APPIMAGE_EXTRACT_AND_RUN lets the appimagetool AppImage run without FUSE
     # (some systems lack libfuse2). ARCH is required by appimagetool.

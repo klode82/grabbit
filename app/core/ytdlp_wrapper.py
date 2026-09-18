@@ -1,6 +1,10 @@
 from __future__ import annotations
 
+import os
 import re
+import shutil
+import sys
+import sysconfig
 import threading
 from pathlib import Path
 from typing import Any, Callable, Optional
@@ -9,6 +13,7 @@ import yt_dlp
 
 from app.core.logger import log
 from app.core.ffmpeg import resolve_ffmpeg
+from app.core.paths import BASE_DIR
 
 # yt-dlp injects ANSI colour codes into _speed_str / _eta_str; strip them
 # before sending to the frontend so the UI sees plain text.
@@ -17,6 +22,41 @@ _ANSI_RE = re.compile(r'\x1b\[[0-9;]*[a-zA-Z]')
 
 def _strip_ansi(s: str) -> str:
     return _ANSI_RE.sub('', s or '')
+
+
+# ── YouTube JS challenge solving (EJS) ───────────────────────────────────────
+# yt-dlp needs a JavaScript runtime to solve YouTube's signature and n-sig
+# challenges. Without one, formats go missing and downloads get throttled. We
+# bundle Deno (the pip `deno` wheel, placed by the PyInstaller specs) so users
+# install nothing, and point yt-dlp at it explicitly: yt-dlp's own lookup only
+# searches the frozen binary's directory on Windows — on Linux it falls back to
+# bare PATH, which an AppImage does not have our copy on.
+# The solver scripts themselves come from the yt_dlp_ejs package, collected
+# automatically by yt-dlp's own PyInstaller hook.
+
+
+def _deno_path() -> Optional[str]:
+    name = "deno.exe" if sys.platform == "win32" else "deno"
+    candidates = [
+        BASE_DIR / name,                                 # frozen: bundled by the spec
+        Path(sysconfig.get_path("scripts")) / name,      # source: pip-installed in the venv
+    ]
+    for c in candidates:
+        if c.is_file() and os.access(c, os.X_OK):
+            return str(c)
+    return shutil.which(name)
+
+
+# Resolved once at import — the binary does not move while the app runs.
+# Left unset if missing so yt-dlp can still try its own PATH lookup.
+_JS_RUNTIME_OPTS: dict[str, Any] = {}
+_deno = _deno_path()
+if _deno:
+    _JS_RUNTIME_OPTS["js_runtimes"] = {"deno": {"path": _deno}}
+    log.info("JS runtime (EJS): deno at %s", _deno)
+else:
+    log.warning("JS runtime (EJS): deno not found — YouTube formats may be "
+                "missing and downloads throttled")
 
 
 # ── Audio conversion ─────────────────────────────────────────────────────────
@@ -270,6 +310,7 @@ class YTDLPWrapper:
             # Skip unavailable / private / geo-blocked entries in playlists
             # instead of raising an error for the whole playlist.
             "ignoreerrors":      True,
+            **_JS_RUNTIME_OPTS,
         }
         with yt_dlp.YoutubeDL(opts) as ydl:
             info = ydl.extract_info(url, download=False)
@@ -495,6 +536,7 @@ class YTDLPWrapper:
                 "quiet": True,
                 "no_warnings": True,
                 "outtmpl": base_tpl,
+                **_JS_RUNTIME_OPTS,
             }
             with yt_dlp.YoutubeDL(peek_opts) as ydl_peek:
                 peek_info = ydl_peek.extract_info(url, download=False)
@@ -533,6 +575,7 @@ class YTDLPWrapper:
             "quiet":                True,
             "no_warnings":          True,
             "merge_output_format":  merge_ext,
+            **_JS_RUNTIME_OPTS,
         }
 
         # Point yt-dlp at ffmpeg explicitly (configured path → PATH → common

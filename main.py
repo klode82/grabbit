@@ -372,6 +372,8 @@ def main() -> None:
         sys.exit(1)
 
     print(f"[GRABBIT] Server running at http://127.0.0.1:{port}")
+    from yt_dlp.version import __version__ as _ytdlp_version
+    print(f"[GRABBIT] yt-dlp {_ytdlp_version}")
 
     # Resolve icon path — bundled under assets/ (frozen-aware via paths.py)
     from app.core.paths import ASSETS_DIR

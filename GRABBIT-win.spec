@@ -13,6 +13,21 @@
 
 from PyInstaller.utils.hooks import collect_submodules, collect_data_files
 
+# ── Deno: the JS runtime yt-dlp needs for YouTube challenge solving ──────────
+# Shipped as a pip wheel ([deno] extra), so it lands in the venv's scripts dir.
+# Bundling it at the root of _internal/ puts it where app/core/ytdlp_wrapper.py
+# looks (BASE_DIR == sys._MEIPASS). The solver scripts (yt_dlp_ejs) are picked
+# up automatically by yt-dlp's own PyInstaller hook — nothing to do for those.
+import os as _os, sysconfig as _sysconfig
+
+_DENO = _os.path.join(_sysconfig.get_path('scripts'), 'deno.exe')
+if not _os.path.isfile(_DENO):
+    raise SystemExit(
+        f"Build aborted: deno not found at {_DENO}.\n"
+        "Install it into the build venv with:  pip install -r requirements.txt"
+    )
+binaries = [(_DENO, '.')]
+
 hiddenimports = []
 hiddenimports += collect_submodules('uvicorn')
 hiddenimports += collect_submodules('webview')
@@ -28,7 +43,7 @@ datas += collect_data_files('certifi')     # CA bundle → fixes SSL in the froz
 a = Analysis(
     ['main.py'],
     pathex=[],
-    binaries=[],
+    binaries=binaries,
     datas=datas,
     hiddenimports=hiddenimports,
     hookspath=[],

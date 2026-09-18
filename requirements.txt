@@ -1,7 +1,11 @@
 pywebview>=5.0.5
 fastapi>=0.115.0
 uvicorn>=0.30.0
-yt-dlp>=2024.11.18
+# [default] pulls yt-dlp-ejs (the YouTube JS challenge solver scripts) and [deno]
+# pulls the Deno runtime that executes them — both are bundled by the PyInstaller
+# specs so users need nothing installed. Without them YouTube signature and n-sig
+# solving fails: formats go missing and downloads get throttled.
+yt-dlp[default,deno]>=2026.8.19
 python-multipart>=0.0.12
 websockets>=13.0
 aiofiles>=24.1.0
